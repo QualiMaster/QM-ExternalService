@@ -15,11 +15,54 @@ import java.util.Random;
  */
 public class Client {
 
-  public static void main(String[] args) throws IOException {
-    Socket socket = new Socket("localhost", 8888);
-    ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+  Socket socket;
+  ObjectOutputStream objectOutputStream;
+  Random random;
 
-    Random random = new Random(new Date().getTime());
+  public Client() throws IOException {
+    socket = new Socket("localhost", 8888);
+    objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+    random = new Random(new Date().getTime());
+  }
+
+  public void stressTest(Boolean financial) throws IOException {
+
+    List<String> symbols = new ArrayList<String>();
+    if (financial) {
+      for (int i = 0; i < 10; ++i) {
+        symbols.add("fin" + String.valueOf(i));
+      }
+      symbols.add(0, "f");
+    } else {
+      for (int i = 0; i < 10; ++i) {
+        symbols.add("w" + String.valueOf(i));
+      }
+      symbols.add(0, "w");
+    }
+
+    objectOutputStream.writeObject(symbols);
+
+    while (true) {
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        // continue
+      }
+
+      int rounds = 10000;
+      while (rounds-- > 0) {
+        if (financial) {
+          objectOutputStream
+              .writeObject("f,symbol1,symbol2," + String.valueOf(random.nextDouble()));
+        } else {
+          objectOutputStream
+              .writeObject("w,symbol1,symbol2," + String.valueOf(random.nextDouble()));
+        }
+      }
+    }
+  }
+
+  public void initialTest() throws IOException {
 
     while (true) {
       System.out.print("Producer> ");
@@ -64,5 +107,13 @@ public class Client {
         break;
       }
     }
+  }
+
+  public static void main(String[] args) throws IOException {
+
+    Client c = new Client();
+
+//    c.initialTest();
+    c.stressTest(Boolean.valueOf(args[0]));
   }
 }
