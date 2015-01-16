@@ -5,10 +5,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.net.Socket;
 
 /**
@@ -19,8 +19,9 @@ public class DataConsumerDataHandler implements IDataHandler {
   RequestHandler requestHandler;
   Socket socket;
   OutputStream outputStream;
+  InputStream inputStream;
 
-  BufferedReader reader;
+//  BufferedReader reader;
   PrintWriter printWriter;
 
   Logger logger = LoggerFactory.getLogger(DataProducerDataHandler.class);
@@ -29,8 +30,25 @@ public class DataConsumerDataHandler implements IDataHandler {
     this.requestHandler = requestHandler;
     this.socket = socket;
     outputStream = socket.getOutputStream();
-    reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    inputStream = socket.getInputStream();
+//    reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     printWriter = new PrintWriter(outputStream, true);
+  }
+
+  String readString() throws IOException {
+    StringBuilder response = new StringBuilder();
+    int c;
+    while (inputStream != null && (c = inputStream.read()) != -1) {
+      if ((char) c == '\n') {  // All messages are separated by
+        break;
+      }
+      response.append((char) c);
+    }
+    String res = response.toString();
+    if (res.equals("")) {
+      return null;
+    }
+    return res;
   }
 
   @Override
@@ -39,7 +57,8 @@ public class DataConsumerDataHandler implements IDataHandler {
     while (true) {
       String received;
       try {
-        received = reader.readLine();
+        received = readString();
+//        received = reader.readLine();
       } catch (IOException e) {
         logger.error(e.getMessage(), e);
         break;
@@ -50,14 +69,14 @@ public class DataConsumerDataHandler implements IDataHandler {
       }
 
       if (received.equals("quoteList")) {  // Send Symbols List command
-        logger.info("[consumer] got sendSymbolsList");
+        logger.info("[consumer] got quoteList");
         requestHandler.sendAllSymbols(outputStream);
       } else if (received.equals("resultsSubscribe")) {  // Start sending results command
-        logger.info("[consumer] got startResults");
+        logger.info("[consumer] got resultsSubscribe");
         requestHandler.subscribeToResultsBoard(outputStream);
         printWriter.println("resultsSubscribe_response, resultsSubscribe ok");
       } else if (received.equals("resultsUnsubscribe")) {  // Stop sending results command
-        logger.info("[consumer] got stopResults");
+        logger.info("[consumer] got resultsUnsubscribe");
         requestHandler.unsubscribeFromResultsBoard(outputStream);
         printWriter.println("resultsUnsubscribe_response, resultsUnsubscribe ok");
       } else {

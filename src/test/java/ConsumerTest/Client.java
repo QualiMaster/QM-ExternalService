@@ -20,7 +20,7 @@ public class Client {
   Boolean readingList;
 
   public Client() throws IOException {
-    socket = new Socket("localhost", 8889);
+    socket = new Socket("147.27.14.117", 8889);
     writer = new PrintWriter(socket.getOutputStream(), true);
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }

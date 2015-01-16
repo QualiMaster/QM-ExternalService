@@ -16,8 +16,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class RequestHandler {
   List<OutputStream> resultsBoard;
   Lock resultsBoardLock;
-  List<String> allFinancialSymbols;
-  List<String> allWebSymbols;
+  String allFinancialSymbols;
+  String allWebSymbols;
   Lock symbolsLock;
 
   Logger logger = LoggerFactory.getLogger(Server.class);
@@ -53,14 +53,13 @@ public class RequestHandler {
     resultsBoardLock.unlock();
   }
 
-  public void updateFinancialSymbolsList(List<String> newSymbolsList) {
+  public void updateFinancialSymbolsList(String newSymbolsList) {
     symbolsLock.lock();
-    allFinancialSymbols = new ArrayList<String>(newSymbolsList);
-//    allFinancialSymbols = newSymbolsList;
+    allFinancialSymbols = newSymbolsList;
     symbolsLock.unlock();
   }
 
-  public void updateWebSymbolsList(List<String> newSymbolsList) {
+  public void updateWebSymbolsList(String newSymbolsList) {
     symbolsLock.lock();
     allWebSymbols = newSymbolsList;
     symbolsLock.unlock();
@@ -69,22 +68,9 @@ public class RequestHandler {
   public void sendAllSymbols(OutputStream consumerOutputStream) {
     PrintWriter writer = new PrintWriter(consumerOutputStream);
     symbolsLock.lock();
-    String allSymbols = "f,";
-    if (allFinancialSymbols != null) {
-      for (String s : allFinancialSymbols) {
-        allSymbols += s + "!";
-      }
-    }
-    writer.println("quoteList_response," + allSymbols);
+    writer.println("quoteList_response," + allFinancialSymbols);
     writer.flush();
-
-    allSymbols = "w,";
-    if (allWebSymbols != null) {
-      for (String s : allWebSymbols) {
-        allSymbols += s + "!";
-      }
-    }
-    writer.println("quoteList_response," + allSymbols);
+    writer.println("quoteList_response," + allWebSymbols);
     writer.flush();
     symbolsLock.unlock();
   }
