@@ -44,12 +44,12 @@ public class Client {
 
     while (true) {
       try {
-        Thread.sleep(1000);
+        Thread.sleep(2000);
       } catch (InterruptedException e) {
         // continue
       }
 
-      int rounds = 10000;
+      int rounds = 10;
       while (rounds-- > 0) {
         if (financial) {
           objectOutputStream

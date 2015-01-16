@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.net.Socket;
 
 /**
@@ -20,6 +21,7 @@ public class DataConsumerDataHandler implements IDataHandler {
   OutputStream outputStream;
 
   BufferedReader reader;
+  PrintWriter printWriter;
 
   Logger logger = LoggerFactory.getLogger(DataProducerDataHandler.class);
 
@@ -28,6 +30,7 @@ public class DataConsumerDataHandler implements IDataHandler {
     this.socket = socket;
     outputStream = socket.getOutputStream();
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    printWriter = new PrintWriter(outputStream, true);
   }
 
   @Override
@@ -46,19 +49,20 @@ public class DataConsumerDataHandler implements IDataHandler {
         break;  // socket has been closed
       }
 
-      if (received.equals("sendSymbolsList")) {  // Send Symbols List command
+      if (received.equals("quoteList")) {  // Send Symbols List command
         logger.info("[consumer] got sendSymbolsList");
         requestHandler.sendAllSymbols(outputStream);
-      } else if (received.equals("startResults")) {  // Start sending results command
+      } else if (received.equals("resultsSubscribe")) {  // Start sending results command
         logger.info("[consumer] got startResults");
         requestHandler.subscribeToResultsBoard(outputStream);
-      } else if (received.equals("stopResults")) {  // Stop sending results command
+        printWriter.println("resultsSubscribe_response, resultsSubscribe ok");
+      } else if (received.equals("resultsUnsubscribe")) {  // Stop sending results command
         logger.info("[consumer] got stopResults");
         requestHandler.unsubscribeFromResultsBoard(outputStream);
+        printWriter.println("resultsUnsubscribe_response, resultsUnsubscribe ok");
       } else {
         logger.error("Unknown command received: " + received);
-        PrintWriter writer = new PrintWriter(outputStream, true);
-        writer.println("Unknown command received: " + received);
+        printWriter.println("Unknown command received: " + received);
       }
     }
 

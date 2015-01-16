@@ -47,7 +47,7 @@ public class RequestHandler {
     resultsBoardLock.lock();
     for (OutputStream s : resultsBoard) {
       PrintWriter writer = new PrintWriter(s, true);
-      writer.println(result);
+      writer.println("resultsSubscribe_response" + "," + result);
       writer.flush();
     }
     resultsBoardLock.unlock();
@@ -69,18 +69,23 @@ public class RequestHandler {
   public void sendAllSymbols(OutputStream consumerOutputStream) {
     PrintWriter writer = new PrintWriter(consumerOutputStream);
     symbolsLock.lock();
+    String allSymbols = "f,";
     if (allFinancialSymbols != null) {
       for (String s : allFinancialSymbols) {
-        writer.println("f," + s);
+        allSymbols += s + "!";
       }
-      writer.flush();
     }
+    writer.println("quoteList_response," + allSymbols);
+    writer.flush();
+
+    allSymbols = "w,";
     if (allWebSymbols != null) {
       for (String s : allWebSymbols) {
-        writer.println("w," + s);
+        allSymbols += s + "!";
       }
-      writer.flush();
     }
+    writer.println("quoteList_response," + allSymbols);
+    writer.flush();
     symbolsLock.unlock();
   }
 }

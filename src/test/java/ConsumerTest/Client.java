@@ -44,13 +44,13 @@ public class Client {
           String line = in.readLine();
           if (line.equals("s")) {
             readingResults = true;
-            writer.println("startResults");
+            writer.println("resultsSubscribe");
             writer.flush();
           } else if (line.equals("st")) {
-            writer.println("stopResults");
+            writer.println("resultsUnsubscribe");
             writer.flush();
           } else if (line.equals("l")) {
-            writer.println("sendSymbolsList");
+            writer.println("quoteList");
             writer.flush();
           } else if (line.equals("x")) {  // close socket
             System.out.println("gracefully ending connection");
