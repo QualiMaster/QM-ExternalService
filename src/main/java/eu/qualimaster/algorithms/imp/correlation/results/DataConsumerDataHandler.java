@@ -3,7 +3,7 @@ package eu.qualimaster.algorithms.imp.correlation.results;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,7 +21,9 @@ public class DataConsumerDataHandler implements IDataHandler {
   OutputStream outputStream;
   InputStream inputStream;
 
-//  BufferedReader reader;
+  BufferedInputStream bufferedInputStream;
+  InputStreamReader inputStreamReader;
+
   PrintWriter printWriter;
 
   Logger logger = LoggerFactory.getLogger(DataProducerDataHandler.class);
@@ -31,15 +33,17 @@ public class DataConsumerDataHandler implements IDataHandler {
     this.socket = socket;
     outputStream = socket.getOutputStream();
     inputStream = socket.getInputStream();
-//    reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     printWriter = new PrintWriter(outputStream, true);
+
+    bufferedInputStream = new BufferedInputStream(socket.getInputStream());
+    inputStreamReader = new InputStreamReader(bufferedInputStream);
   }
 
   String readString() throws IOException {
     StringBuilder response = new StringBuilder();
     int c;
-    while (inputStream != null && (c = inputStream.read()) != -1) {
-      if ((char) c == '\n') {  // All messages are separated by
+    while (inputStreamReader != null && (c = inputStreamReader.read()) != -1) {
+      if ((char) c == '!') {  // All messages are separated by !
         break;
       }
       response.append((char) c);
@@ -58,7 +62,6 @@ public class DataConsumerDataHandler implements IDataHandler {
       String received;
       try {
         received = readString();
-//        received = reader.readLine();
       } catch (IOException e) {
         logger.error(e.getMessage(), e);
         break;

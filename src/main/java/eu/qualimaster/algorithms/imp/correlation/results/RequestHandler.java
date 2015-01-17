@@ -47,7 +47,7 @@ public class RequestHandler {
     resultsBoardLock.lock();
     for (OutputStream s : resultsBoard) {
       PrintWriter writer = new PrintWriter(s, true);
-      writer.println("resultsSubscribe_response" + "," + result);
+      writer.println("resultsSubscribe_response" + "," + result + "!");
       writer.flush();
     }
     resultsBoardLock.unlock();
