@@ -51,6 +51,8 @@ public class DataConsumerDataHandler implements IDataHandler {
     String res = response.toString();
     if (res.equals("")) {
       return null;
+    } else if (res.startsWith("\n")) {
+      return res.substring(1);
     }
     return res;
   }

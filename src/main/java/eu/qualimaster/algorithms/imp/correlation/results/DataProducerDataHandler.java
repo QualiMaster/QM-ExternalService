@@ -37,7 +37,9 @@ public class DataProducerDataHandler implements IDataHandler {
         logger.error(e.getMessage(), e);
         break;
       }
-      if (received.startsWith("l,")) {  // list
+      if (received == null) {
+        break;
+      } else if (received.startsWith("l,")) {  // list
         String symbols = received.substring(2, received.length());
         if (symbols.startsWith("f,")) {
           requestHandler.updateFinancialSymbolsList(symbols);

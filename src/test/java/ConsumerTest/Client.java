@@ -20,7 +20,8 @@ public class Client {
   Boolean readingList;
 
   public Client() throws IOException {
-    socket = new Socket("147.27.14.117", 8889);
+    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
+//    socket = new Socket("localhost", 8889);
     writer = new PrintWriter(socket.getOutputStream(), true);
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }
@@ -44,13 +45,13 @@ public class Client {
           String line = in.readLine();
           if (line.equals("s")) {
             readingResults = true;
-            writer.println("resultsSubscribe");
+            writer.println("resultsSubscribe!");
             writer.flush();
           } else if (line.equals("st")) {
-            writer.println("resultsUnsubscribe");
+            writer.println("resultsUnsubscribe!");
             writer.flush();
           } else if (line.equals("l")) {
-            writer.println("quoteList");
+            writer.println("quoteList!");
             writer.flush();
           } else if (line.equals("x")) {  // close socket
             System.out.println("gracefully ending connection");
