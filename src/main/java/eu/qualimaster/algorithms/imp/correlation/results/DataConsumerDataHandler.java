@@ -26,7 +26,7 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   PrintWriter printWriter;
 
-  Logger logger = LoggerFactory.getLogger(DataProducerDataHandler.class);
+  Logger logger = LoggerFactory.getLogger(DataConsumerDataHandler.class);
 
   public DataConsumerDataHandler(RequestHandler requestHandler, Socket socket) throws IOException {
     this.requestHandler = requestHandler;
