@@ -7,8 +7,8 @@ import java.util.Date;
 import java.util.Random;
 
 /**
- * Created by ap0n on 1/15/15.
- */
+* Created by ap0n on 1/15/15.
+*/
 public class Client {
 
   Socket socket;

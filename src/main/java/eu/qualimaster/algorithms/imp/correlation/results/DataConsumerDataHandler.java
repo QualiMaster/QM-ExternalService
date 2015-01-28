@@ -37,6 +37,7 @@ public class DataConsumerDataHandler implements IDataHandler {
 
     bufferedInputStream = new BufferedInputStream(socket.getInputStream());
     inputStreamReader = new InputStreamReader(bufferedInputStream);
+    logger.info("Consumer connected from: " + socket.getInetAddress().getHostAddress());
   }
 
   String readString() throws IOException {

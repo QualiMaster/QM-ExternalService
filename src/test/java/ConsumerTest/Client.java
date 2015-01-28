@@ -1,7 +1,5 @@
 package ConsumerTest;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -9,8 +7,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 /**
- * Created by ap0n on 1/15/15.
- */
+* Created by ap0n on 1/15/15.
+*/
 public class Client {
 
   Socket socket;
@@ -20,8 +18,8 @@ public class Client {
   Boolean readingList;
 
   public Client() throws IOException {
-//    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
-    socket = new Socket("localhost", 8889);
+    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
+//    socket = new Socket("localhost", 8889);
     writer = new PrintWriter(socket.getOutputStream(), true);
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }

@@ -23,6 +23,7 @@ public class DataProducerDataHandler implements IDataHandler {
     this.socket = socket;
     this.requestHandler = requestHandler;
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    logger.info("Producer connected from: " + socket.getInetAddress().getHostAddress());
   }
 
   @Override
