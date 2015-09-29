@@ -26,7 +26,6 @@ public class DataProducerDataHandler implements IDataHandler {
     logger.info("Producer connected from: " + socket.getInetAddress().getHostAddress());
   }
 
-  @Override
   public void run() {
     logger.info(this.getClass().getName() + " started.");
     while (true) {

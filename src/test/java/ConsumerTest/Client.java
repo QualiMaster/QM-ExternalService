@@ -35,7 +35,6 @@ public class Client {
 
   private class Cli implements Runnable {
 
-    @Override
     public void run() {
       BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
       try {

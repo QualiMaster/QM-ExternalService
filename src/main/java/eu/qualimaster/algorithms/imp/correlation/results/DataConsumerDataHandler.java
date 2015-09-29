@@ -58,7 +58,6 @@ public class DataConsumerDataHandler implements IDataHandler {
     return res;
   }
 
-  @Override
   public void run() {
     logger.info(this.getClass().getName() + " started.");
     while (true) {

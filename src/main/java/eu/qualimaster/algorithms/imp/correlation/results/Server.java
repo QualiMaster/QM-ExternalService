@@ -49,7 +49,6 @@ public class Server {
       this.isProducer = isProducer;
     }
 
-    @Override
     public void run() {
       Socket clientSocket;
       logger.info("Server started. Waiting for connections");
