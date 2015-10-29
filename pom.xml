@@ -15,6 +15,11 @@
             <version>1.7.10</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>eu.qualimaster</groupId>
+            <artifactId>spring-client</artifactId>
+            <version>3.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

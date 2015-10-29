@@ -39,13 +39,6 @@ public class DataProducerDataHandler implements IDataHandler {
       }
       if (received == null) {
         break;
-      } else if (received.startsWith("l,")) {  // list
-        String symbols = received.substring(2, received.length());
-        if (symbols.startsWith("f,")) {
-          requestHandler.updateFinancialSymbolsList(symbols);
-        } else {
-          requestHandler.updateWebSymbolsList(symbols);
-        }
       } else if (received.startsWith("f,") || (received.startsWith("w,"))) {  // result
         requestHandler.publishToResultsBoard((String) received);
       } else {  // Unknown

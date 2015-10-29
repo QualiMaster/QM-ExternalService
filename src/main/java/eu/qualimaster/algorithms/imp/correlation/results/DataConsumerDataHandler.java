@@ -65,8 +65,15 @@ public class DataConsumerDataHandler implements IDataHandler {
 
       if (received.equals("quoteList")) {  // Send Symbols List command
         logger.info("[consumer] got quoteList");
-        // TODO(ap0n): Call Spring's API and get the quoteList
-        requestHandler.sendAllSymbols(outputStream);
+
+        synchronized (printWriter) {
+          try {
+            printWriter.print("quoteList_response," + requestHandler.getQuoteList());
+            printWriter.flush();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
 
       } else if (received.startsWith("resultsSubscribe/")) {  // Start sending results command
 

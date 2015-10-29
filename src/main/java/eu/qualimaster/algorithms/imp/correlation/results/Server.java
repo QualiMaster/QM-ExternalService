@@ -27,7 +27,11 @@ public class Server {
     this.consumerPort = consumerPort;
     soTimeout = 500;
 
-    requestHandler = new RequestHandler();
+    try {
+      requestHandler = new RequestHandler();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
 
     serverProducerSocket = new ServerSocket(producerPort);
     serverProducerSocket.setSoTimeout(soTimeout);
