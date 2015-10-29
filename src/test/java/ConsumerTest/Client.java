@@ -18,8 +18,8 @@ public class Client {
   Boolean readingList;
 
   public Client() throws IOException {
-    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
-//    socket = new Socket("localhost", 8889);
+//    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
+    socket = new Socket("localhost", 8889);
     writer = new PrintWriter(socket.getOutputStream(), true);
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }
@@ -40,12 +40,14 @@ public class Client {
       try {
         while (true) {
           String line = in.readLine();
-          if (line.equals("s")) {
+          if (line.startsWith("s/")) {
             readingResults = true;
-            writer.println("resultsSubscribe!");
+            String command = "resultsSubscribe" + line.substring(1) + "!";
+            writer.println(command);
             writer.flush();
-          } else if (line.equals("st")) {
-            writer.println("resultsUnsubscribe!");
+          } else if (line.startsWith("st/")) {
+            String command = "resultsUnsubscribe" + line.substring(2) + "!";
+            writer.println(command);
             writer.flush();
           } else if (line.equals("l")) {
             writer.println("quoteList!");

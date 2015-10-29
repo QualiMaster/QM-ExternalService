@@ -46,7 +46,16 @@ public class Client {
       int rounds = 10;
       while (rounds-- > 0) {
         if (financial) {
-          writer.println("f,symbol1,symbol2," + String.valueOf(random.nextDouble()));
+          writer.println("f,0,1," + String.valueOf(random.nextDouble()));
+          writer.println("f,0,2," + String.valueOf(random.nextDouble()));
+          writer.println("f,0,3," + String.valueOf(random.nextDouble()));
+          writer.println("f,1,2," + String.valueOf(random.nextDouble()));
+          writer.println("f,1,3," + String.valueOf(random.nextDouble()));
+          writer.println("f,2,3," + String.valueOf(random.nextDouble()));
+//          writer.println("f,"
+//                         + random.nextInt(10) + ","
+//                         + random.nextInt(10) + ","
+//                         + String.valueOf(random.nextDouble()));
         } else {
           writer.println("w,symbol1,symbol2," + String.valueOf(random.nextDouble()));
         }

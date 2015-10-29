@@ -14,43 +14,39 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by ap0n on 1/15/15.
  */
 public class RequestHandler {
-  List<OutputStream> resultsBoard;
-  Lock resultsBoardLock;
-  String allFinancialSymbols;
-  String allWebSymbols;
-  Lock symbolsLock;
+  List<DataConsumerDataHandler> resultsBoard;
+  String allFinancialSymbols;  // TODO(ap0n): Remove this one
+  String allWebSymbols;  // TODO(ap0n): Remove this one
+  Lock symbolsLock;  // TODO(ap0n): Remove this one
 
   Logger logger = LoggerFactory.getLogger(Server.class);
 
   public RequestHandler() {
-    resultsBoard = new ArrayList<OutputStream>();
-    resultsBoardLock = new ReentrantLock();
+    resultsBoard = new ArrayList<DataConsumerDataHandler>();
 
     symbolsLock = new ReentrantLock();
   }
 
-  public void subscribeToResultsBoard(OutputStream consumerOutputStream) {
-    resultsBoardLock.lock();
-    if (!resultsBoard.contains(consumerOutputStream)) {
-      resultsBoard.add(consumerOutputStream);
+  public void subscribeToResultsBoard(DataConsumerDataHandler consumer) {
+    synchronized (resultsBoard) {
+      if (!resultsBoard.contains(consumer)) {
+        resultsBoard.add(consumer);
+      }
     }
-    resultsBoardLock.unlock();
   }
 
-  public void unsubscribeFromResultsBoard(OutputStream consumerOutputStream) {
-    resultsBoardLock.lock();
-    resultsBoard.remove(consumerOutputStream);
-    resultsBoardLock.unlock();
+  public void unsubscribeFromResultsBoard(DataConsumerDataHandler consumer) {
+    synchronized (resultsBoard) {
+      resultsBoard.remove(consumer);
+    }
   }
 
   public void publishToResultsBoard(String result) {
-    resultsBoardLock.lock();
-    for (OutputStream s : resultsBoard) {
-      PrintWriter writer = new PrintWriter(s, true);
-      writer.println("resultsSubscribe_response" + "," + result + "!");
-      writer.flush();
+    synchronized (resultsBoard) {
+      for (DataConsumerDataHandler s : resultsBoard) {
+        s.consumeResult(result);
+      }
     }
-    resultsBoardLock.unlock();
   }
 
   public void updateFinancialSymbolsList(String newSymbolsList) {
