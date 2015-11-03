@@ -18,8 +18,8 @@ public class Client {
   Boolean readingList;
 
   public Client() throws IOException {
-//    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
-    socket = new Socket("localhost", 8889);
+    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
+//    socket = new Socket("localhost", 8889);
     writer = new PrintWriter(socket.getOutputStream(), true);
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }

@@ -20,9 +20,6 @@ public class RequestHandler {
 
   public RequestHandler() throws Exception {
     resultsBoard = new ArrayList<DataConsumerDataHandler>();
-
-    springDataConnector = new DataConnector();
-    loginToSpring("katerina2", "password");
   }
 
   public void subscribeToResultsBoard(DataConsumerDataHandler consumer) {
@@ -49,25 +46,40 @@ public class RequestHandler {
 
   public String getQuoteList() throws Exception {
 
-    synchronized (springDataConnector) {
-      springDataConnector.fullQuoteListResponce = null;
+    String res;
+    synchronized (this) {
+      initSpringDataConnector();
+
+      springDataConnector.fullQuoteListResponce = "";
       try {
+        logger.info("Fetching symbols");
         springDataConnector.getSymbols();
+        while (springDataConnector.fullQuoteListResponce == "") {
+          springDataConnector.execute();
+        }
+        logger.info("Symbols fetched");
       } catch (IOException e) {
-        logger.error("SERVER: Get Symbols Error, " + e.getMessage());
-        throw new Exception("SERVER: Get Symbols Error : " + e.getMessage());
+        try {
+          logger.info("Error getting symbols. Closing connection and retrying");
+          springDataConnector.stopRunning();
+          initSpringDataConnector();
+          springDataConnector.getSymbols();
+        } catch (Exception ex) {
+          logger.error("SERVER: Get Symbols Error, " + ex.getMessage());
+          throw new Exception("SERVER: Get Symbols Error : " + ex.getMessage());
+        }
       }
-      while (springDataConnector.fullQuoteListResponce == null) {
-        springDataConnector.execute();
-      }
-      return springDataConnector.fullQuoteListResponce;
+      res =  springDataConnector.fullQuoteListResponce;
+      springDataConnector.stopRunning();
+      springDataConnector = null;
     }
+    return res;
   }
 
   private void loginToSpring(String username, String password) throws Exception {
     int result = springDataConnector.connect();
     switch (result) {
-      case DataConnector.OK : {
+      case DataConnector.OK: {
         logger.info("Connected to Spring API");
         try {
           springDataConnector.login(username, password);
@@ -93,6 +105,13 @@ public class RequestHandler {
 
     while (!springDataConnector.isLoggedIn()) {
       springDataConnector.execute();
+    }
+  }
+
+  private void initSpringDataConnector() throws Exception {
+    synchronized (this) {
+      springDataConnector = new DataConnector();
+      loginToSpring("katerina2", "password");
     }
   }
 }

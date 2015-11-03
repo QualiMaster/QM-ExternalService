@@ -10,8 +10,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by ap0n on 1/14/15.
@@ -28,7 +28,7 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   private PrintWriter printWriter;
 
-  private Set<String> filter;
+  private Map<String, Integer> filter;
 
   private Logger logger = LoggerFactory.getLogger(DataConsumerDataHandler.class);
 
@@ -41,7 +41,7 @@ public class DataConsumerDataHandler implements IDataHandler {
 
     bufferedInputStream = new BufferedInputStream(socket.getInputStream());
     inputStreamReader = new InputStreamReader(bufferedInputStream);
-    filter = new HashSet<String>();
+    filter = new HashMap<String, Integer>();
     logger.info("Consumer connected from: " + socket.getInetAddress().getHostAddress());
   }
 
@@ -64,14 +64,18 @@ public class DataConsumerDataHandler implements IDataHandler {
       }
 
       if (received.equals("quoteList")) {  // Send Symbols List command
-        logger.info("[consumer] got quoteList");
+        logger.info("Got quoteList");
 
         synchronized (printWriter) {
           try {
-            printWriter.print("quoteList_response," + requestHandler.getQuoteList());
+            String reply = requestHandler.getQuoteList();
+            logger.info("Sending symbols");
+            printWriter.print("quoteList_response," + reply);
             printWriter.flush();
           } catch (Exception e) {
-            e.printStackTrace();
+            String reply = "error: " + e.getMessage() + ". Please try again.";
+            printWriter.print("quoteList_response," + reply);
+            logger.error(e.getMessage(), e);
           }
         }
 
@@ -147,7 +151,7 @@ public class DataConsumerDataHandler implements IDataHandler {
     String[] splitResult = result.split(",");
     boolean ret;
     synchronized (filter) {
-      ret = filter.contains(splitResult[1] + "," + splitResult[2]);
+      ret = filter.containsKey(splitResult[1] + "," + splitResult[2]);
     }
     return ret;
   }
@@ -159,8 +163,15 @@ public class DataConsumerDataHandler implements IDataHandler {
         if (pair.length() == 0) {
           continue;
         }
-        System.out.println("Adding " + pair + " to filter");
-        filter.add(pair);
+        logger.info("Adding " + pair + " to filter");
+        Integer ctr = filter.get(pair);
+        if (ctr == null) {
+          filter.put(pair, 1);
+          logger.info(pair + " added to filter. Current count is " + 1);
+        } else {
+          filter.put(pair, ++ctr);
+          logger.info(pair + " was already in filter. Current count is " + ctr);
+        }
       }
     }
   }
@@ -172,8 +183,18 @@ public class DataConsumerDataHandler implements IDataHandler {
         if (pair.length() == 0) {
           continue;
         }
-        System.out.println("Removing " + pair + " from filter");
-        filter.remove(pair);
+        logger.info("Removing " + pair + " from filter");
+        Integer ctr = filter.get(pair);
+        if (ctr == null) {
+          logger.warn("Removing non existent pair (" + pair + ")!");
+          continue;
+        } else if (ctr == 1) {
+          filter.remove(pair);
+          logger.info("Removed " + pair + " from filter completely");
+        } else {
+          filter.put(pair, --ctr);
+          logger.info("Removed " + pair + " from filter. Current count is " + ctr);
+        }
       }
     }
   }
