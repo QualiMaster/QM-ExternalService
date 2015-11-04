@@ -29,6 +29,7 @@ public class DataConsumerDataHandler implements IDataHandler {
   private PrintWriter printWriter;
 
   private Map<String, Integer> filter;
+  private boolean useFilter;
 
   private Logger logger = LoggerFactory.getLogger(DataConsumerDataHandler.class);
 
@@ -43,6 +44,7 @@ public class DataConsumerDataHandler implements IDataHandler {
     inputStreamReader = new InputStreamReader(bufferedInputStream);
     filter = new HashMap<String, Integer>();
     logger.info("Consumer connected from: " + socket.getInetAddress().getHostAddress());
+    useFilter = true;
   }
 
   public void run() {
@@ -148,6 +150,9 @@ public class DataConsumerDataHandler implements IDataHandler {
   }
 
   private boolean filterResult(String result) {  // Runs from different thread
+    if (!useFilter) {
+      return true;
+    }
     String[] splitResult = result.split(",");
     boolean ret;
     synchronized (filter) {
@@ -164,6 +169,10 @@ public class DataConsumerDataHandler implements IDataHandler {
           continue;
         }
         logger.info("Adding " + pair + " to filter");
+        if (pair.equals("*")) {
+          useFilter = false;
+          continue;
+        }
         Integer ctr = filter.get(pair);
         if (ctr == null) {
           filter.put(pair, 1);
@@ -184,6 +193,10 @@ public class DataConsumerDataHandler implements IDataHandler {
           continue;
         }
         logger.info("Removing " + pair + " from filter");
+        if (pair.equals("*")) {
+          useFilter = true;
+          continue;
+        }
         Integer ctr = filter.get(pair);
         if (ctr == null) {
           logger.warn("Removing non existent pair (" + pair + ")!");
