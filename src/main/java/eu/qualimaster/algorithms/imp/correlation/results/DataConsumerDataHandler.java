@@ -75,7 +75,7 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.flush();
           } catch (Exception e) {
             String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.print("quoteList_response," + reply);
+            printWriter.print("login_response," + reply);
             logger.error(e.getMessage(), e);
           }
         }
