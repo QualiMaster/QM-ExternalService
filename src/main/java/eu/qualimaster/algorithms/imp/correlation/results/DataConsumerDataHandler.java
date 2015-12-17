@@ -65,7 +65,33 @@ public class DataConsumerDataHandler implements IDataHandler {
         break;  // socket has been closed
       }
 
-      if (received.equals("quoteList")) {  // Send Symbols List command
+
+      if (received.equals("login")) { // Login command
+        synchronized (printWriter) {
+          try {
+            String reply = "dummy login response";
+            logger.info("Sending login response");
+            printWriter.print("login_response," + reply);
+            printWriter.flush();
+          } catch (Exception e) {
+            String reply = "error: " + e.getMessage() + ". Please try again.";
+            printWriter.print("quoteList_response," + reply);
+            logger.error(e.getMessage(), e);
+          }
+        }
+      } else if (received.equals("logout")) { // Logout command
+
+      } else if (received.equals("setGlobalAnalysisInterval")) { // Set global analysis interval command
+
+      } else if (received.equals("requestDependencyAnalysis")) { // Request dependency analysis
+
+      } else if (received.equals("stopDependencyAnalysis")) { // Stop dependency analysis
+
+      } else if (received.equals("requestHistoricalDependency")) { // Request historical dependency
+
+      } else if (received.equals("setAdaptationParameter")) { // Set adaptation parameter command
+
+      } else if (received.equals("quoteList")) {  // Send Symbols List command
         logger.info("Got quoteList");
 
         synchronized (printWriter) {
@@ -86,8 +112,8 @@ public class DataConsumerDataHandler implements IDataHandler {
         logger.info("[consumer] got resultsSubscribe");
 
           // "resultsSubscribe/".length = 17
-          addToFilter(received.substring(17));
-          synchronized (printWriter) {
+        addToFilter(received.substring(17));
+        synchronized (printWriter) {
             printWriter.println("resultsSubscribe_response, resultsSubscribe ok");
         }
 
