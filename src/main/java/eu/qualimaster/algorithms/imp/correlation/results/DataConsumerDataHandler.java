@@ -82,8 +82,10 @@ public class DataConsumerDataHandler implements IDataHandler {
         synchronized (printWriter) {
           try {
             String[] parts = received.split("/"); // e.g. "login/userA/qualimaster"
-            username = parts[1];
-            password = parts[2];
+            if(parts.length==3) {
+              username = parts[1];
+              password = parts[2];
+            }
             String reply = "Failed to authenticate user with username : "
                            + username + " and password : " + password;
             if (username.equals("userA") && password.equals("qualimaster")) {
@@ -98,7 +100,7 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.flush();
           } catch (Exception e) {
             String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.print("login_response," + reply);
+            printWriter.println("login_response," + reply);
             logger.error(e.getMessage(), e);
           }
         }
@@ -116,7 +118,7 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.flush();
           } catch (Exception e) {
             String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.print("logout_response," + reply);
+            printWriter.println("logout_response," + reply);
             logger.error(e.getMessage(), e);
           }
         }
@@ -142,7 +144,7 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.flush();
           } catch (Exception e) {
             String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.print("quoteList_response," + reply);
+            printWriter.println("quoteList_response," + reply);
             logger.error(e.getMessage(), e);
           }
         }
