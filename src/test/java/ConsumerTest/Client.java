@@ -7,8 +7,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 /**
-* Created by ap0n on 1/15/15.
-*/
+ * Created by ap0n on 1/15/15.
+ */
 public class Client {
 
   Socket socket;
@@ -18,8 +18,8 @@ public class Client {
   Boolean readingList;
 
   public Client() throws IOException {
-    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
-//    socket = new Socket("localhost", 8889);
+//    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
+    socket = new Socket("localhost", 8889);
     writer = new PrintWriter(socket.getOutputStream(), true);
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }
@@ -51,6 +51,9 @@ public class Client {
             writer.flush();
           } else if (line.equals("l")) {
             writer.println("quoteList!");
+            writer.flush();
+          } else if (line.startsWith("login/") || line.equals("logout")) {
+            writer.println(line + "!");
             writer.flush();
           } else if (line.equals("x")) {  // close socket
             System.out.println("gracefully ending connection");
