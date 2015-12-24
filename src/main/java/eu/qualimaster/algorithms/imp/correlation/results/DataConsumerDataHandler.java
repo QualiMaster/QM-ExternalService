@@ -98,7 +98,7 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.flush();
           } catch (Exception e) {
             String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.print("login_response," + reply);
+            printWriter.println("login_response," + reply);
             logger.error(e.getMessage(), e);
           }
         }
@@ -116,7 +116,7 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.flush();
           } catch (Exception e) {
             String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.print("logout_response," + reply);
+            printWriter.println("logout_response," + reply);
             logger.error(e.getMessage(), e);
           }
         }
@@ -142,7 +142,7 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.flush();
           } catch (Exception e) {
             String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.print("quoteList_response," + reply);
+            printWriter.println("quoteList_response," + reply);
             logger.error(e.getMessage(), e);
           }
         }
