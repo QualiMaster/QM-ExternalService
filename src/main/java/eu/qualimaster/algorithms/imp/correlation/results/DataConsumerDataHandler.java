@@ -33,6 +33,12 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   private Logger logger = LoggerFactory.getLogger(DataConsumerDataHandler.class);
 
+
+  // For dummy login demo
+  String username;
+  String password;
+  // End dummy login demo
+
   public DataConsumerDataHandler(RequestHandler requestHandler, Socket socket) throws IOException {
     this.requestHandler = requestHandler;
     this.socket = socket;
@@ -45,6 +51,10 @@ public class DataConsumerDataHandler implements IDataHandler {
     filter = new HashMap<String, Integer>();
     logger.info("Consumer connected from: " + socket.getInetAddress().getHostAddress());
     useFilter = true;
+    // For dummy login demo
+    username = "";
+    password = "";
+    // End dummy login demo
   }
 
   public void run() {
@@ -65,13 +75,26 @@ public class DataConsumerDataHandler implements IDataHandler {
         break;  // socket has been closed
       }
 
+      // All the command logic should be implemented in "RequestHandler". Dummy Login/Logout
+      // implementation here is just for demonstration purposes.
 
-      if (received.equals("login")) { // Login command
+      if (received.startsWith("login")) { // Login command
         synchronized (printWriter) {
           try {
-            String reply = "dummy login response";
+            String[] parts = received.split("/"); // e.g. "login/userA/qualimaster"
+            username = parts[1];
+            password = parts[2];
+            String reply = "Failed to authenticate user with username : "
+                           + username + " and password : " + password;
+            if (username.equals("userA") && password.equals("qualimaster")) {
+              reply = "Successfully authenticated user with username : "
+                      + username + " and password : " + password;
+            } else {
+              username = "";
+              password = "";
+            }
             logger.info("Sending login response");
-            printWriter.print("login_response," + reply);
+            printWriter.println("login_response," + reply);
             printWriter.flush();
           } catch (Exception e) {
             String reply = "error: " + e.getMessage() + ". Please try again.";
@@ -80,8 +103,25 @@ public class DataConsumerDataHandler implements IDataHandler {
           }
         }
       } else if (received.equals("logout")) { // Logout command
-
-      } else if (received.equals("setGlobalAnalysisInterval")) { // Set global analysis interval command
+        synchronized (printWriter) {
+          try {
+            String reply = "User already logged out.";
+            if (!username.equals("")) {
+              reply = "Successfully logged user with username : " + username + " out";
+              username = "";
+              password = "";
+            }
+            logger.info("Sending logout response");
+            printWriter.println("logout_response," + reply);
+            printWriter.flush();
+          } catch (Exception e) {
+            String reply = "error: " + e.getMessage() + ". Please try again.";
+            printWriter.print("logout_response," + reply);
+            logger.error(e.getMessage(), e);
+          }
+        }
+      } else if (received
+          .equals("setGlobalAnalysisInterval")) { // Set global analysis interval command
 
       } else if (received.equals("requestDependencyAnalysis")) { // Request dependency analysis
 
@@ -111,10 +151,10 @@ public class DataConsumerDataHandler implements IDataHandler {
 
         logger.info("[consumer] got resultsSubscribe");
 
-          // "resultsSubscribe/".length = 17
+        // "resultsSubscribe/".length = 17
         addToFilter(received.substring(17));
         synchronized (printWriter) {
-            printWriter.println("resultsSubscribe_response, resultsSubscribe ok");
+          printWriter.println("resultsSubscribe_response, resultsSubscribe ok");
         }
 
       } else if (received.startsWith("resultsUnsubscribe/")) {  // Stop sending results command
