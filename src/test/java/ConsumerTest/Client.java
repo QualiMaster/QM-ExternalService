@@ -29,7 +29,11 @@ public class Client {
     cliThread.start();
 
     while (true) {
-      System.out.println(reader.readLine());
+      String line = reader.readLine();
+      if (line == null) {
+        break;
+      }
+      System.out.println(line);
     }
   }
 
@@ -52,9 +56,6 @@ public class Client {
           } else if (line.equals("l")) {
             writer.println("quoteList!");
             writer.flush();
-          } else if (line.startsWith("login/") || line.equals("logout")) {
-            writer.println(line + "!");
-            writer.flush();
           } else if (line.equals("x")) {  // close socket
             System.out.println("gracefully ending connection");
             socket.getOutputStream().close();
@@ -64,6 +65,9 @@ public class Client {
           } else if (line.equals("d")) {  // disconnect
             System.out.println("forcefully ending connection");
             System.exit(0);
+          } else {
+            writer.println(line + "!");
+            writer.flush();
           }
         }
       } catch (IOException e) {
