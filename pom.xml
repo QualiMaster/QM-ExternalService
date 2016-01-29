@@ -4,8 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>correlation.result.requestHandler</groupId>
-    <artifactId>correlation-result-requestHandler</artifactId>
+    <groupId>correlation.result.server</groupId>
+    <artifactId>correlation-result-server</artifactId>
+    <packaging>jar</packaging>
     <version>0.1-SNAPSHOT</version>
 
     <repositories>
@@ -27,7 +28,22 @@
         <dependency>
             <groupId>eu.qualimaster</groupId>
             <artifactId>spring-client</artifactId>
-            <version>3.0-SNAPSHOT</version>
+            <version>3.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.qualimaster</groupId>
+            <artifactId>AdaptationLayer.External</artifactId>
+            <version>0.2.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>  <!-- for adaptation events -->
+            <groupId>eu.qualimaster</groupId>
+            <artifactId>QualiMaster.Events</artifactId>
+            <version>0.2.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>  <!-- for HBAse communication -->
+            <groupId>eu.qualimaster</groupId>
+            <artifactId>ExternalHBaseConnector</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -70,7 +86,7 @@
                     <!-- MainClass in mainfest make a executable jar -->
                     <archive>
                         <manifest>
-                            <mainClass>eu.qualimaster.algorithms.imp.correlation.results.Server</mainClass>
+                            <mainClass>eu.qualimaster.comserver.Server</mainClass>
                         </manifest>
                     </archive>
 

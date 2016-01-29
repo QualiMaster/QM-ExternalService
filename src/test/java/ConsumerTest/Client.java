@@ -18,8 +18,9 @@ public class Client {
   Boolean readingList;
 
   public Client() throws IOException {
-//    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
-    socket = new Socket("localhost", 8889);
+    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
+//    socket = new Socket("localhost", 8889);
+//    socket = new Socket("clu01.softnet.tuc.gr", 8889);
     writer = new PrintWriter(socket.getOutputStream(), true);
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
   }
@@ -55,6 +56,12 @@ public class Client {
             writer.flush();
           } else if (line.equals("l")) {
             writer.println("quoteList!");
+            writer.flush();
+          } else if (line.startsWith("ap/")) {
+            writer.println("addMarketplayer" + line.substring(2) + "!");
+            writer.flush();
+          } else if (line.startsWith("rp/")) {
+            writer.println("removeMarketplayer" + line.substring(2) + "!");
             writer.flush();
           } else if (line.equals("x")) {  // close socket
             System.out.println("gracefully ending connection");

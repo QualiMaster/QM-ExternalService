@@ -1,4 +1,4 @@
-package eu.qualimaster.algorithms.imp.correlation.results;
+package eu.qualimaster.comserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

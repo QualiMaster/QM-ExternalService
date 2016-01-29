@@ -1,4 +1,4 @@
-package eu.qualimaster.algorithms.imp.correlation.results;
+package eu.qualimaster.comserver;
 
 import eu.qualimaster.algorithms.imp.correlation.spring.DataConnector;
 
@@ -35,6 +35,9 @@ public class RequestHandler {
   }
 
   public String loginUser(String received) {
+
+    // TODO(npavlakis): Read users/passwords from a file
+
     String[] parts = received.split("/"); // e.g. "login/userA/qualimaster"
     String uname, passwd;
     if (parts.length == 3) {
@@ -193,4 +196,6 @@ public class RequestHandler {
     String reply = "Starting Historical Dependency Analysis";
     return reply;
   }
+
+
 }

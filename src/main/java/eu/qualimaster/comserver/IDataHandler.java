@@ -1,4 +1,4 @@
-package eu.qualimaster.algorithms.imp.correlation.results;
+package eu.qualimaster.comserver;
 
 /**
  * Created by ap0n on 1/14/15.

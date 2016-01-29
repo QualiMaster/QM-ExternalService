@@ -1,4 +1,8 @@
-package eu.qualimaster.algorithms.imp.correlation.results;
+package eu.qualimaster.comserver;
+
+import eu.qualimaster.ExternalHBaseConnector.TweetSentimentConnector;
+import eu.qualimaster.adaptation.external.ChangeParameterRequest;
+import eu.qualimaster.adaptation.external.ClientEndpoint;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +14,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,11 +39,17 @@ public class DataConsumerDataHandler implements IDataHandler {
   private Map<String, Integer> filter;
   private boolean useFilter;
 
+  private ClientEndpoint clientEndpoint;  // For sending user commands to the infrastructure.
+  // *Warning* Lock clientEntpoint before using it!
+  private TweetSentimentConnector tweetSentimentConnector;
   private Logger logger = LoggerFactory.getLogger(DataConsumerDataHandler.class);
+  private DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 
-  public DataConsumerDataHandler(RequestHandler requestHandler, Socket socket) throws IOException {
+  public DataConsumerDataHandler(RequestHandler requestHandler, Socket socket,
+                                 ClientEndpoint clientEndpoint) throws IOException {
     this.requestHandler = requestHandler;
     this.socket = socket;
+
     outputStream = socket.getOutputStream();
     inputStream = socket.getInputStream();
     printWriter = new PrintWriter(outputStream, true);
@@ -45,6 +59,9 @@ public class DataConsumerDataHandler implements IDataHandler {
     filter = new HashMap<String, Integer>();
     logger.info("Consumer connected from: " + socket.getInetAddress().getHostAddress());
     useFilter = true;
+
+    this.clientEndpoint = clientEndpoint;
+    tweetSentimentConnector = new TweetSentimentConnector();
   }
 
   public void run() {
@@ -93,8 +110,8 @@ public class DataConsumerDataHandler implements IDataHandler {
         }
       } else if (received
           .startsWith("setGlobalAnalysisInterval/")) { // Set global analysis interval command
+        logger.info("Got setGlobalAnalysisInterval");
         synchronized (printWriter) {
-          logger.info("Got setGlobalAnalysisInterval");
           try {
             String[] parts = received.split("/"); // e.g. "setGlobalAnalysisInterval/1000"
             int interval = Integer.parseInt(parts[1]);
@@ -108,8 +125,8 @@ public class DataConsumerDataHandler implements IDataHandler {
           }
         }
       } else if (received.equals("requestDependencyAnalysis")) { // Request dependency analysis
+        logger.info("Got requestDependencyAnalysis");
         synchronized (printWriter) {
-          logger.info("Got requestDependencyAnalysis");
           try {
             String reply = requestHandler.requestDependencyAnalysis();
             printWriter.println("requestDependencyAnalysis_response," + reply);
@@ -121,8 +138,8 @@ public class DataConsumerDataHandler implements IDataHandler {
           }
         }
       } else if (received.equals("stopDependencyAnalysis")) { // Stop dependency analysis
+        logger.info("Got stopDependencyAnalysis");
         synchronized (printWriter) {
-          logger.info("Got stopDependencyAnalysis");
           try {
             String reply = requestHandler.stopDependencyAnalysis();
             printWriter.println("stopDependencyAnalysis_response," + reply);
@@ -134,8 +151,8 @@ public class DataConsumerDataHandler implements IDataHandler {
           }
         }
       } else if (received.equals("requestHistoricalDependency")) { // Request historical dependency
+        logger.info("Got requestHistoricalDependency");
         synchronized (printWriter) {
-          logger.info("Got requestHistoricalDependency");
           try {
             String reply = requestHandler.requestHistoricalDependency();
             printWriter.println("requestHistoricalDependency_response," + reply);
@@ -146,9 +163,10 @@ public class DataConsumerDataHandler implements IDataHandler {
             logger.error(e.getMessage(), e);
           }
         }
-      } else if (received.startsWith("setAdaptationParameter/")) { // Set adaptation parameter command
+      } else if (received
+          .startsWith("setAdaptationParameter/")) { // Set adaptation parameter command
+        logger.info("Got setAdaptationParameter");
         synchronized (printWriter) {
-          logger.info("Got setAdaptationParameter");
           try {
             String reply = requestHandler.setAdaptationParameter(received);
             printWriter.println("setAdaptationParameter_response," + reply);
@@ -159,9 +177,21 @@ public class DataConsumerDataHandler implements IDataHandler {
             logger.error(e.getMessage(), e);
           }
         }
-      } else if (received.equals("quoteList")) {  // Send Symbols List command
+      } else if (received.startsWith("addMarketplayer/")
+                 || received.startsWith("removeMarketplayer/")) {
+
+        logger.info("Got " + received);
+
+        editMarketPlayerList(received);
+        // TODO(ap0n): Reply to the client.
+
         synchronized (printWriter) {
-          logger.info("Got quoteList");
+          printWriter.println("editMarketPlayer_response, ok");
+        }
+
+      } else if (received.equals("quoteList")) {  // Send Symbols List command
+        logger.info("Got quoteList");
+        synchronized (printWriter) {
           try {
             String reply = requestHandler.getQuoteList();
             logger.info("Sending symbols");
@@ -192,6 +222,27 @@ public class DataConsumerDataHandler implements IDataHandler {
 
         synchronized (printWriter) {
           printWriter.println("resultsUnsubscribe_response, resultsUnsubscribe ok");
+        }
+
+      } else if (received.startsWith("requestHistoricalSentiment/")) {
+        logger.info("[consumer] got resultsHistoricalSentiment. Cmd = " + received);
+        try {
+
+          String[] reply = requestHistoricalSentiment(received.substring(27));
+
+          synchronized (printWriter) {
+            printWriter.println("historicalSentiment_response, historicalSentimantResponse ok");
+            for (String s : reply) {
+              printWriter.println(s);
+            }
+            printWriter.println("!");
+          }
+        } catch (ParseException e) {
+          logger.error(e.getMessage(), e);
+
+          synchronized (printWriter) {
+            printWriter.println("historicalSentiment_response, " + e.getMessage());
+          }
         }
 
       } else {
@@ -270,10 +321,8 @@ public class DataConsumerDataHandler implements IDataHandler {
         Integer ctr = filter.get(pair);
         if (ctr == null) {
           filter.put(pair, 1);
-          logger.info(pair + " added to filter. Current count is " + 1);
         } else {
           filter.put(pair, ++ctr);
-          logger.info(pair + " was already in filter. Current count is " + ctr);
         }
       }
     }
@@ -293,16 +342,58 @@ public class DataConsumerDataHandler implements IDataHandler {
         }
         Integer ctr = filter.get(pair);
         if (ctr == null) {
-          logger.warn("Removing non existent pair (" + pair + ")!");
+          logger.warn("Trying to remove non existent pair (" + pair + ")!");
           continue;
         } else if (ctr == 1) {
           filter.remove(pair);
-          logger.info("Removed " + pair + " from filter completely");
         } else {
           filter.put(pair, --ctr);
-          logger.info("Removed " + pair + " from filter. Current count is " + ctr);
         }
       }
     }
+  }
+
+  public String editMarketPlayerList(String command) {
+
+    ChangeParameterRequest<String> financialRequest =
+        new ChangeParameterRequest<>("PriorityPip", "FinancialDataSource", "playerList", command);
+    // TODO(ap0n): Send the message to twitter as well.
+
+    synchronized (clientEndpoint) {
+      clientEndpoint.schedule(financialRequest);
+    }
+
+    String reply = "";
+    return reply;
+  }
+
+  public String[] requestHistoricalSentiment(String request) throws ParseException {
+
+    // request format: MM/dd/YYYY,HH:mm:ss,MM/dd/YYYY,HH:mm:ss,player1,player2,...
+    // response format: player,date,sentiment
+
+    // parse request
+    String[] args = request.split(",");
+    Date startDate = dateFormat.parse(args[0]);
+    Date endDate = dateFormat.parse(args[1]);
+
+    String[] result = new String[args.length - 2];
+
+    for (int i = 2; i < args.length; i++) {
+      int playerId = Integer.parseInt(args[i]);
+      HashMap<Long, Integer> r = tweetSentimentConnector.getSentimentForMarketplayer(playerId,
+                                                                                     startDate,
+                                                                                     endDate);
+      result[i - 2] = args[i];
+      if (r.size() == 0) {
+        result[i - 2] += "|" + null;
+      }
+      for (Map.Entry<Long, Integer> entry : r.entrySet()) {
+        Date d = new Date(entry.getKey());
+
+        result[i - 2] += "|" + dateFormat.format(d) + "," + entry.getValue();
+      }
+    }
+    return result;
   }
 }
