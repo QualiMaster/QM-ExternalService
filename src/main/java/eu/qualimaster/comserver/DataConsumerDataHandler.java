@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Created by ap0n on 1/14/15.
@@ -228,10 +229,13 @@ public class DataConsumerDataHandler implements IDataHandler {
         logger.info("[consumer] got resultsHistoricalSentiment. Cmd = " + received);
         try {
 
+          synchronized (printWriter) {
+            printWriter.println("historicalSentiment_response, historicalSentimantResponse ok");
+          }
+
           String[] reply = requestHistoricalSentiment(received.substring(27));
 
           synchronized (printWriter) {
-            printWriter.println("historicalSentiment_response, historicalSentimantResponse ok");
             for (String s : reply) {
               printWriter.println(s);
             }
@@ -381,17 +385,19 @@ public class DataConsumerDataHandler implements IDataHandler {
 
     for (int i = 2; i < args.length; i++) {
       int playerId = Integer.parseInt(args[i]);
-      HashMap<Long, Integer> r = tweetSentimentConnector.getSentimentForMarketplayer(playerId,
-                                                                                     startDate,
-                                                                                     endDate);
+      TreeMap<Long, Integer[]> r = tweetSentimentConnector
+          .getSentimentForMarketplayerDail(playerId, startDate, endDate);
       result[i - 2] = args[i];
       if (r.size() == 0) {
         result[i - 2] += "|" + null;
       }
-      for (Map.Entry<Long, Integer> entry : r.entrySet()) {
+      for (Map.Entry<Long, Integer[]> entry : r.entrySet()) {
         Date d = new Date(entry.getKey());
 
-        result[i - 2] += "|" + dateFormat.format(d) + "," + entry.getValue();
+        result[i - 2] += "|" + dateFormat.format(d);
+        for (int j = 0; j < entry.getValue().length; j++) {
+          result[i - 2] += "," + entry.getValue()[j];
+        }
       }
     }
     return result;

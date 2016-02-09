@@ -1,6 +1,7 @@
 package eu.qualimaster.comserver;
 
 import eu.qualimaster.Configuration;
+import eu.qualimaster.ExternalHBaseConnector.TweetSentimentConnector;
 import eu.qualimaster.adaptation.external.ClientEndpoint;
 import eu.qualimaster.comserver.adaptation.Dispatcher;
 
@@ -13,6 +14,11 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TreeMap;
 
 /**
  * Created by ap0n on 1/14/15.
@@ -67,6 +73,16 @@ public class Server {
       logger.error(e.getMessage(), e);
     }
   }
+
+//  public static void main(String[] args) throws ParseException {
+//
+//    TweetSentimentConnector connector = new TweetSentimentConnector();
+//    DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+//    Date startDate = dateFormat.parse("09/01/2015");
+//    Date endDate = dateFormat.parse("01/01/2016");
+//    TreeMap<Long, Integer[]> r = connector.getSentimentForMarketplayerDail(1416, startDate, endDate);
+//    System.out.println(r.size());
+//  }
 
   public void start() {
     Thread producerThread = new Thread(new ServerRunnable(true));
