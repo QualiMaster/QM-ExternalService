@@ -1,8 +1,14 @@
 package eu.qualimaster.comserver;
 
+import eu.qualimaster.Configuration;
 import eu.qualimaster.ExternalHBaseConnector.TweetSentimentConnector;
 import eu.qualimaster.adaptation.external.ChangeParameterRequest;
 import eu.qualimaster.adaptation.external.ClientEndpoint;
+import eu.qualimaster.adaptation.external.RequestMessage;
+import eu.qualimaster.adaptation.external.ResponseMessage;
+import eu.qualimaster.adaptation.external.UsualMessage;
+import eu.qualimaster.comserver.adaptation.Dispatcher;
+import eu.qualimaster.events.ResponseStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -38,14 +45,16 @@ public class DataConsumerDataHandler implements IDataHandler {
   private Map<String, Integer> filter;
   private boolean useFilter;
 
-  private ClientEndpoint clientEndpoint;  // For sending user commands to the infrastructure.
   // *Warning* Lock clientEntpoint before using it!
   private TweetSentimentConnector tweetSentimentConnector;
+
+  private ResponseStore<UsualMessage, ChangeParameterRequest, ResponseMessage> responseStore;
+
+  private ClientEndpoint clientEndpoint;  // For sending user commands to the infrastructure.
   private Logger logger = LoggerFactory.getLogger(DataConsumerDataHandler.class);
   private DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 
-  public DataConsumerDataHandler(RequestHandler requestHandler, Socket socket,
-                                 ClientEndpoint clientEndpoint) throws IOException {
+  public DataConsumerDataHandler(RequestHandler requestHandler, Socket socket) throws IOException {
     this.requestHandler = requestHandler;
     this.socket = socket;
 
@@ -58,7 +67,37 @@ public class DataConsumerDataHandler implements IDataHandler {
     logger.info("Consumer connected from: " + socket.getInetAddress().getHostAddress());
     useFilter = true;
 
-    this.clientEndpoint = clientEndpoint;
+    ResponseStore.IStoreHandler<UsualMessage, ChangeParameterRequest, ResponseMessage> handler = new ResponseStore.IStoreHandler<UsualMessage, ChangeParameterRequest, ResponseMessage>() {
+      @Override
+      public String getRequestMessageId(ChangeParameterRequest requestMessage) {
+        return requestMessage.getMessageId();
+      }
+
+      @Override
+      public String getResponseMessageId(ResponseMessage responseMessage) {
+        return responseMessage.getMessageId();
+      }
+
+      @Override
+      public ChangeParameterRequest castRequest(UsualMessage usualMessage) {
+        return ResponseStore.cast(ChangeParameterRequest.class, usualMessage);
+      }
+
+      @Override
+      public ResponseMessage castResponse(UsualMessage usualMessage) {
+        return ResponseStore.cast(ResponseMessage.class, usualMessage);
+      }
+    };
+
+    responseStore = new ResponseStore<>(0, handler);
+
+    Dispatcher dispatcher = new Dispatcher(printWriter, responseStore);
+
+    clientEndpoint =
+        new ClientEndpoint(dispatcher,
+                           InetAddress.getByName(Configuration.getAdaptationHost()),
+                           Configuration.getAdaptationPort());
+
     tweetSentimentConnector = new TweetSentimentConnector();
   }
 
@@ -246,19 +285,13 @@ public class DataConsumerDataHandler implements IDataHandler {
           }
         }
 
-      } else if (received.startsWith("changeWindowSize/")) {
+      } else if (received.startsWith("changewindowSize/")) {
 
         changeWindowSize(received.substring(17));
-        synchronized (printWriter) {
-          printWriter.println("changeWindowSize_response, changeWindowSizeResponse ok");
-        }
 
-      } else if (received.startsWith("changeHubListSize/")) {
+      } else if (received.startsWith("changehubListSize/")) {
 
         changeHubListStize(received.substring(18));
-        synchronized (printWriter) {
-          printWriter.println("changeHubListSize_response, changeHubListSizeResponse ok");
-        }
 
       } else {
         logger.error("Unknown command received: " + received);
@@ -379,7 +412,7 @@ public class DataConsumerDataHandler implements IDataHandler {
     }
   }
 
-  private String changeHubListStize(String hubListSize) {
+  private void changeHubListStize(String hubListSize) {
 
     // TODO(ap0n): Read the configuration from a file
     ChangeParameterRequest<Integer> changehubListSizeRequest =
@@ -388,13 +421,11 @@ public class DataConsumerDataHandler implements IDataHandler {
 
     synchronized (clientEndpoint) {
       clientEndpoint.schedule(changehubListSizeRequest);
+      responseStore.sentEvent(changehubListSizeRequest);
     }
-
-    String reply = "";  // TODO
-    return reply;
   }
 
-  public String changeWindowSize(String windowSize) {
+  public void changeWindowSize(String windowSize) {
 
     // TODO(ap0n): Read the configuration from a file
     ChangeParameterRequest<Integer> changeWindowRequest =
@@ -403,13 +434,11 @@ public class DataConsumerDataHandler implements IDataHandler {
 
     synchronized (clientEndpoint) {
       clientEndpoint.schedule(changeWindowRequest);
+      responseStore.sentEvent(changeWindowRequest);
     }
-
-    String reply = "";  // TODO
-    return reply;
   }
 
-  public String editMarketPlayerList(String command) {
+  public void editMarketPlayerList(String command) {
 
     // TODO(ap0n): Read the configuration from a file
     ChangeParameterRequest<String> financialRequest =
@@ -417,10 +446,8 @@ public class DataConsumerDataHandler implements IDataHandler {
 
     synchronized (clientEndpoint) {
       clientEndpoint.schedule(financialRequest);
+      responseStore.sentEvent(financialRequest);
     }
-
-    String reply = "";  // TODO
-    return reply;
   }
 
   public String[] requestHistoricalSentiment(String request) throws ParseException {

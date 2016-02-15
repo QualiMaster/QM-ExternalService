@@ -73,9 +73,9 @@ public class Client {
             System.out.println("forcefully ending connection");
             System.exit(0);
           } else if (line.startsWith("cws/")) {
-            writer.println("changeWindowSize/" + line.substring(4));
+            writer.println("changewindowSize/" + line.substring(4));
           } else if (line.startsWith("chs/")) {
-            writer.println("changeHubListSize/" + line.substring(4));
+            writer.println("changehubListSize/" + line.substring(4));
           } else {
             writer.println(line + "!");
             writer.flush();

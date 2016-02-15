@@ -32,7 +32,6 @@ public class Server {
   RequestHandler requestHandler;
   ServerSocket serverProducerSocket;
   ServerSocket serverConsumerSocket;
-  ClientEndpoint clientEndpoint;
 
   public Server(int producerPort, int consumerPort, String adaptationConfigurationFile)
       throws IOException {
@@ -101,13 +100,6 @@ public class Server {
 
     logger.info("Host: " + Configuration.getAdaptationHost());
     logger.info("Port: " + Configuration.getAdaptationPort());
-
-    Dispatcher dispatcher = new Dispatcher();
-
-    clientEndpoint =
-        new ClientEndpoint(dispatcher,
-                           InetAddress.getByName(Configuration.getAdaptationHost()),
-                           Configuration.getAdaptationPort());
   }
 
   private class ServerRunnable implements Runnable {
@@ -130,8 +122,7 @@ public class Server {
             thread.start();
           } else {
             clientSocket = serverConsumerSocket.accept();
-            Thread thread = new Thread(new DataConsumerDataHandler(requestHandler, clientSocket,
-                                                                   clientEndpoint));
+            Thread thread = new Thread(new DataConsumerDataHandler(requestHandler, clientSocket));
             thread.start();
           }
         } catch (SocketTimeoutException e) {
