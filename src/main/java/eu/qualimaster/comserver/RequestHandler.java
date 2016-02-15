@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class RequestHandler {
 
-  private List<DataConsumerDataHandler> resultsBoard;
+  private List<DataConsumerDataHandler> dataConsumers;
   private DataConnector springDataConnector;
 
   private Logger logger = LoggerFactory.getLogger(Server.class);
@@ -27,7 +27,7 @@ public class RequestHandler {
   // End dummy login demo
 
   public RequestHandler() throws Exception {
-    resultsBoard = new ArrayList<DataConsumerDataHandler>();
+    dataConsumers = new ArrayList<DataConsumerDataHandler>();
     // For dummy login demo
     username = "";
     password = "";
@@ -71,24 +71,32 @@ public class RequestHandler {
     return reply;
   }
 
-  public void subscribeToResultsBoard(DataConsumerDataHandler consumer) {
-    synchronized (resultsBoard) {
-      if (!resultsBoard.contains(consumer)) {
-        resultsBoard.add(consumer);
+  public void subscribeConsumer(DataConsumerDataHandler consumer) {
+    synchronized (dataConsumers) {
+      if (!dataConsumers.contains(consumer)) {
+        dataConsumers.add(consumer);
       }
     }
   }
 
-  public void unsubscribeFromResultsBoard(DataConsumerDataHandler consumer) {
-    synchronized (resultsBoard) {
-      resultsBoard.remove(consumer);
+  public void unsubscribeConsumer(DataConsumerDataHandler consumer) {
+    synchronized (dataConsumers) {
+      dataConsumers.remove(consumer);
     }
   }
 
-  public void publishToResultsBoard(String result) {
-    synchronized (resultsBoard) {
-      for (DataConsumerDataHandler s : resultsBoard) {
-        s.consumeResult(result);
+  public void publishCorrelationResult(String result) {
+    synchronized (dataConsumers) {
+      for (DataConsumerDataHandler s : dataConsumers) {
+        s.consumeCorrelationResult(result);
+      }
+    }
+  }
+
+  public void publishHubList(String hubList) {
+    synchronized (dataConsumers) {
+      for (DataConsumerDataHandler s : dataConsumers) {
+        s.consumeHubList(hubList);
       }
     }
   }
@@ -196,6 +204,4 @@ public class RequestHandler {
     String reply = "Starting Historical Dependency Analysis";
     return reply;
   }
-
-
 }

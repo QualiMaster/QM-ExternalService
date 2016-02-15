@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -30,7 +29,6 @@ public class DataConsumerDataHandler implements IDataHandler {
   private RequestHandler requestHandler;
   private Socket socket;
   private OutputStream outputStream;
-  private InputStream inputStream;
 
   private BufferedInputStream bufferedInputStream;
   private InputStreamReader inputStreamReader;
@@ -52,12 +50,11 @@ public class DataConsumerDataHandler implements IDataHandler {
     this.socket = socket;
 
     outputStream = socket.getOutputStream();
-    inputStream = socket.getInputStream();
     printWriter = new PrintWriter(outputStream, true);
 
     bufferedInputStream = new BufferedInputStream(socket.getInputStream());
     inputStreamReader = new InputStreamReader(bufferedInputStream);
-    filter = new HashMap<String, Integer>();
+    filter = new HashMap<>();
     logger.info("Consumer connected from: " + socket.getInetAddress().getHostAddress());
     useFilter = true;
 
@@ -67,7 +64,7 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   public void run() {
 
-    requestHandler.subscribeToResultsBoard(this);
+    requestHandler.subscribeConsumer(this);
     logger.info(this.getClass().getName() + " started.");
 
     while (true) {
@@ -249,6 +246,20 @@ public class DataConsumerDataHandler implements IDataHandler {
           }
         }
 
+      } else if (received.startsWith("changeWindowSize/")) {
+
+        changeWindowSize(received.substring(17));
+        synchronized (printWriter) {
+          printWriter.println("changeWindowSize_response, changeWindowSizeResponse ok");
+        }
+
+      } else if (received.startsWith("changeHubListSize/")) {
+
+        changeHubListStize(received.substring(18));
+        synchronized (printWriter) {
+          printWriter.println("changeHubListSize_response, changeHubListSizeResponse ok");
+        }
+
       } else {
         logger.error("Unknown command received: " + received);
         synchronized (printWriter) {
@@ -258,7 +269,7 @@ public class DataConsumerDataHandler implements IDataHandler {
     }
 
     try {
-      requestHandler.unsubscribeFromResultsBoard(this);
+      requestHandler.unsubscribeConsumer(this);
       socket.getInputStream().close();
       socket.getOutputStream().close();
       socket.close();
@@ -267,8 +278,14 @@ public class DataConsumerDataHandler implements IDataHandler {
     }
   }
 
+  public void consumeHubList(String hubList) {
+    synchronized (printWriter) {
+      printWriter.println(hubList + "!");
+      printWriter.flush();
+    }
+  }
 
-  public void consumeResult(String result) {
+  public void consumeCorrelationResult(String result) {
 
     if (!filterResult(result)) {
       return;
@@ -303,6 +320,11 @@ public class DataConsumerDataHandler implements IDataHandler {
       return true;
     }
     String[] splitResult = result.split(",");
+
+    if (splitResult[0].compareTo("f") != 0 && splitResult[0].compareTo("w") != 0) {
+      return true;  // filtering applies to priority pipeline only!
+    }
+
     boolean ret;
     synchronized (filter) {
       ret = filter.containsKey(splitResult[1] + "," + splitResult[2]);
@@ -357,17 +379,47 @@ public class DataConsumerDataHandler implements IDataHandler {
     }
   }
 
+  private String changeHubListStize(String hubListSize) {
+
+    // TODO(ap0n): Read the configuration from a file
+    ChangeParameterRequest<Integer> changehubListSizeRequest =
+        new ChangeParameterRequest<>("DynamicGraphPip", "DynamicHubComputation", "hubListSize",
+                                     Integer.parseInt(hubListSize));
+
+    synchronized (clientEndpoint) {
+      clientEndpoint.schedule(changehubListSizeRequest);
+    }
+
+    String reply = "";  // TODO
+    return reply;
+  }
+
+  public String changeWindowSize(String windowSize) {
+
+    // TODO(ap0n): Read the configuration from a file
+    ChangeParameterRequest<Integer> changeWindowRequest =
+        new ChangeParameterRequest<>("DynamicGraphPip", "DynamicHubComputation", "windowSize",
+                                     Integer.valueOf(windowSize));
+
+    synchronized (clientEndpoint) {
+      clientEndpoint.schedule(changeWindowRequest);
+    }
+
+    String reply = "";  // TODO
+    return reply;
+  }
+
   public String editMarketPlayerList(String command) {
 
+    // TODO(ap0n): Read the configuration from a file
     ChangeParameterRequest<String> financialRequest =
         new ChangeParameterRequest<>("PriorityPip", "FinancialDataSource", "playerList", command);
-    // TODO(ap0n): Send the message to twitter as well.
 
     synchronized (clientEndpoint) {
       clientEndpoint.schedule(financialRequest);
     }
 
-    String reply = "";
+    String reply = "";  // TODO
     return reply;
   }
 

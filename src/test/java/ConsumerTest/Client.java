@@ -18,8 +18,8 @@ public class Client {
   Boolean readingList;
 
   public Client() throws IOException {
-    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
-//    socket = new Socket("localhost", 8889);
+//    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
+    socket = new Socket("localhost", 8889);
 //    socket = new Socket("clu01.softnet.tuc.gr", 8889);
     writer = new PrintWriter(socket.getOutputStream(), true);
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -72,6 +72,10 @@ public class Client {
           } else if (line.equals("d")) {  // disconnect
             System.out.println("forcefully ending connection");
             System.exit(0);
+          } else if (line.startsWith("cws/")) {
+            writer.println("changeWindowSize/" + line.substring(4));
+          } else if (line.startsWith("chs/")) {
+            writer.println("changeHubListSize/" + line.substring(4));
           } else {
             writer.println(line + "!");
             writer.flush();

@@ -40,7 +40,9 @@ public class DataProducerDataHandler implements IDataHandler {
       if (received == null) {
         break;
       } else if (received.startsWith("f,") || (received.startsWith("w,"))) {  // result
-        requestHandler.publishToResultsBoard((String) received);
+        requestHandler.publishCorrelationResult(received);
+      } else if (received.startsWith("hubList,")) {
+        requestHandler.publishHubList(received);
       } else {  // Unknown
         logger.error("Unknown message type received: " + received);
         break;
