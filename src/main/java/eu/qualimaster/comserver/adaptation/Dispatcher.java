@@ -77,7 +77,18 @@ public class Dispatcher implements IDispatcher {
       String value = req.getValue().toString();
       String result = executionResponseMessage.getResult().toString();
 
-      printWriter.println("change" + param + "_response," + result + ",newValue," + value);
+      if (param.equals("playerList")) {
+        String[] r = value.split("/");
+        String v;
+        if (value.startsWith("add")) {
+          v = ",added,";
+        } else {
+          v = ",removed,";
+        }
+        printWriter.println(r[0] + "_response," + result + v + r[1]);
+      } else {
+        printWriter.println("change" + param + "_response," + result + ",newValue," + value);
+      }
 
     }
   }

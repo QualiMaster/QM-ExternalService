@@ -119,113 +119,108 @@ public class DataConsumerDataHandler implements IDataHandler {
         break;  // socket has been closed
       }
 
-      if (received.startsWith("login/")) { // Login command
-        synchronized (printWriter) {
-          try {
-            String reply = requestHandler.loginUser(received);
-            logger.info("Sending login response");
-            printWriter.println("login_response," + reply);
-            printWriter.flush();
-          } catch (Exception e) {
-            String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.println("login_response," + reply);
-            logger.error(e.getMessage(), e);
-          }
-        }
-      } else if (received.startsWith("logout")) { // StartsWith used to avoid Windows socket problem
-        synchronized (printWriter) {
-          try {
-            String reply = requestHandler.logoutUser();
-            logger.info("Sending logout response");
-            printWriter.println("logout_response," + reply);
-            printWriter.flush();
-          } catch (Exception e) {
-            String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.println("logout_response," + reply);
-            logger.error(e.getMessage(), e);
-          }
-        }
-      } else if (received
-          .startsWith("setGlobalAnalysisInterval/")) { // Set global analysis interval command
-        logger.info("Got setGlobalAnalysisInterval");
-        synchronized (printWriter) {
-          try {
-            String[] parts = received.split("/"); // e.g. "setGlobalAnalysisInterval/1000"
-            int interval = Integer.parseInt(parts[1]);
-            String reply = requestHandler.setGlobalAnalysisInterval(interval);
-            printWriter.println("setGlobalAnalysisInterval_response," + reply);
-            printWriter.flush();
-          } catch (Exception e) {
-            String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.println("setGlobalAnalysisInterval_response," + reply);
-            logger.error(e.getMessage(), e);
-          }
-        }
-      } else if (received.equals("requestDependencyAnalysis")) { // Request dependency analysis
-        logger.info("Got requestDependencyAnalysis");
-        synchronized (printWriter) {
-          try {
-            String reply = requestHandler.requestDependencyAnalysis();
-            printWriter.println("requestDependencyAnalysis_response," + reply);
-            printWriter.flush();
-          } catch (Exception e) {
-            String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.println("requestDependencyAnalysis_response," + reply);
-            logger.error(e.getMessage(), e);
-          }
-        }
-      } else if (received.equals("stopDependencyAnalysis")) { // Stop dependency analysis
-        logger.info("Got stopDependencyAnalysis");
-        synchronized (printWriter) {
-          try {
-            String reply = requestHandler.stopDependencyAnalysis();
-            printWriter.println("stopDependencyAnalysis_response," + reply);
-            printWriter.flush();
-          } catch (Exception e) {
-            String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.println("stopDependencyAnalysis_response," + reply);
-            logger.error(e.getMessage(), e);
-          }
-        }
-      } else if (received.equals("requestHistoricalDependency")) { // Request historical dependency
-        logger.info("Got requestHistoricalDependency");
-        synchronized (printWriter) {
-          try {
-            String reply = requestHandler.requestHistoricalDependency();
-            printWriter.println("requestHistoricalDependency_response," + reply);
-            printWriter.flush();
-          } catch (Exception e) {
-            String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.println("requestHistoricalDependency_response," + reply);
-            logger.error(e.getMessage(), e);
-          }
-        }
-      } else if (received
-          .startsWith("setAdaptationParameter/")) { // Set adaptation parameter command
-        logger.info("Got setAdaptationParameter");
-        synchronized (printWriter) {
-          try {
-            String reply = requestHandler.setAdaptationParameter(received);
-            printWriter.println("setAdaptationParameter_response," + reply);
-            printWriter.flush();
-          } catch (Exception e) {
-            String reply = "error: " + e.getMessage() + ". Please try again.";
-            printWriter.println("setAdaptationParameter_response," + reply);
-            logger.error(e.getMessage(), e);
-          }
-        }
-      } else if (received.startsWith("addMarketplayer/")
+//      if (received.startsWith("login/")) { // Login command
+//        synchronized (printWriter) {
+//          try {
+//            String reply = requestHandler.loginUser(received);
+//            logger.info("Sending login response");
+//            printWriter.println("login_response," + reply);
+//            printWriter.flush();
+//          } catch (Exception e) {
+//            String reply = "error: " + e.getMessage() + ". Please try again.";
+//            printWriter.println("login_response," + reply);
+//            logger.error(e.getMessage(), e);
+//          }
+//        }
+//      } else if (received.startsWith("logout")) { // StartsWith used to avoid Windows socket problem
+//        synchronized (printWriter) {
+//          try {
+//            String reply = requestHandler.logoutUser();
+//            logger.info("Sending logout response");
+//            printWriter.println("logout_response," + reply);
+//            printWriter.flush();
+//          } catch (Exception e) {
+//            String reply = "error: " + e.getMessage() + ". Please try again.";
+//            printWriter.println("logout_response," + reply);
+//            logger.error(e.getMessage(), e);
+//          }
+//        }
+//      } else if (received
+//          .startsWith("setGlobalAnalysisInterval/")) { // Set global analysis interval command
+//        logger.info("Got setGlobalAnalysisInterval");
+//        synchronized (printWriter) {
+//          try {
+//            String[] parts = received.split("/"); // e.g. "setGlobalAnalysisInterval/1000"
+//            int interval = Integer.parseInt(parts[1]);
+//            String reply = requestHandler.setGlobalAnalysisInterval(interval);
+//            printWriter.println("setGlobalAnalysisInterval_response," + reply);
+//            printWriter.flush();
+//          } catch (Exception e) {
+//            String reply = "error: " + e.getMessage() + ". Please try again.";
+//            printWriter.println("setGlobalAnalysisInterval_response," + reply);
+//            logger.error(e.getMessage(), e);
+//          }
+//        }
+//      } else if (received.equals("requestDependencyAnalysis")) { // Request dependency analysis
+//        logger.info("Got requestDependencyAnalysis");
+//        synchronized (printWriter) {
+//          try {
+//            String reply = requestHandler.requestDependencyAnalysis();
+//            printWriter.println("requestDependencyAnalysis_response," + reply);
+//            printWriter.flush();
+//          } catch (Exception e) {
+//            String reply = "error: " + e.getMessage() + ". Please try again.";
+//            printWriter.println("requestDependencyAnalysis_response," + reply);
+//            logger.error(e.getMessage(), e);
+//          }
+//        }
+//      } else if (received.equals("stopDependencyAnalysis")) { // Stop dependency analysis
+//        logger.info("Got stopDependencyAnalysis");
+//        synchronized (printWriter) {
+//          try {
+//            String reply = requestHandler.stopDependencyAnalysis();
+//            printWriter.println("stopDependencyAnalysis_response," + reply);
+//            printWriter.flush();
+//          } catch (Exception e) {
+//            String reply = "error: " + e.getMessage() + ". Please try again.";
+//            printWriter.println("stopDependencyAnalysis_response," + reply);
+//            logger.error(e.getMessage(), e);
+//          }
+//        }
+//      } else if (received.equals("requestHistoricalDependency")) { // Request historical dependency
+//        logger.info("Got requestHistoricalDependency");
+//        synchronized (printWriter) {
+//          try {
+//            String reply = requestHandler.requestHistoricalDependency();
+//            printWriter.println("requestHistoricalDependency_response," + reply);
+//            printWriter.flush();
+//          } catch (Exception e) {
+//            String reply = "error: " + e.getMessage() + ". Please try again.";
+//            printWriter.println("requestHistoricalDependency_response," + reply);
+//            logger.error(e.getMessage(), e);
+//          }
+//        }
+//      } else if (received
+//          .startsWith("setAdaptationParameter/")) { // Set adaptation parameter command
+//        logger.info("Got setAdaptationParameter");
+//        synchronized (printWriter) {
+//          try {
+//            String reply = requestHandler.setAdaptationParameter(received);
+//            printWriter.println("setAdaptationParameter_response," + reply);
+//            printWriter.flush();
+//          } catch (Exception e) {
+//            String reply = "error: " + e.getMessage() + ". Please try again.";
+//            printWriter.println("setAdaptationParameter_response," + reply);
+//            logger.error(e.getMessage(), e);
+//          }
+//        }
+//      } else
+       if (received.startsWith("addMarketplayer/")
                  || received.startsWith("removeMarketplayer/")) {
 
         logger.info("Got " + received);
 
-        editMarketPlayerList(received);
-        // TODO(ap0n): Reply to the client.
-
-        synchronized (printWriter) {
-          printWriter.println("editMarketPlayer_response, ok");
-        }
-
+        editMarketPlayerList(received.substring(0, received.length()));  // Strip the '!'
       } else if (received.equals("quoteList")) {  // Send Symbols List command
         logger.info("Got quoteList");
         synchronized (printWriter) {
@@ -240,7 +235,6 @@ public class DataConsumerDataHandler implements IDataHandler {
             logger.error(e.getMessage(), e);
           }
         }
-
       } else if (received.startsWith("resultsSubscribe/")) {  // Start sending results command
 
         logger.info("[consumer] got resultsSubscribe");
