@@ -98,7 +98,7 @@ public class DataConsumerDataHandler implements IDataHandler {
                            InetAddress.getByName(Configuration.getAdaptationHost()),
                            Configuration.getAdaptationPort());
 
-    tweetSentimentConnector = new TweetSentimentConnector();
+//    tweetSentimentConnector = new TweetSentimentConnector();
   }
 
   public void run() {
@@ -450,29 +450,30 @@ public class DataConsumerDataHandler implements IDataHandler {
     // response format: player,date,sentiment
 
     // parse request
-    String[] args = request.split(",");
-    Date startDate = dateFormat.parse(args[0]);
-    Date endDate = dateFormat.parse(args[1]);
-
-    String[] result = new String[args.length - 2];
-
-    for (int i = 2; i < args.length; i++) {
-      int playerId = Integer.parseInt(args[i]);
-      TreeMap<Long, Integer[]> r = tweetSentimentConnector
-          .getSentimentForMarketplayerDail(playerId, startDate, endDate);
-      result[i - 2] = args[i];
-      if (r.size() == 0) {
-        result[i - 2] += "|" + null;
-      }
-      for (Map.Entry<Long, Integer[]> entry : r.entrySet()) {
-        Date d = new Date(entry.getKey());
-
-        result[i - 2] += "|" + dateFormat.format(d);
-        for (int j = 0; j < entry.getValue().length; j++) {
-          result[i - 2] += "," + entry.getValue()[j];
-        }
-      }
-    }
-    return result;
+//    String[] args = request.split(",");
+//    Date startDate = dateFormat.parse(args[0]);
+//    Date endDate = dateFormat.parse(args[1]);
+//
+//    String[] result = new String[args.length - 2];
+//
+//    for (int i = 2; i < args.length; i++) {
+//      int playerId = Integer.parseInt(args[i]);
+//      TreeMap<Long, Integer[]> r = tweetSentimentConnector
+//          .getSentimentForMarketplayerDail(playerId, startDate, endDate);
+//      result[i - 2] = args[i];
+//      if (r.size() == 0) {
+//        result[i - 2] += "|" + null;
+//      }
+//      for (Map.Entry<Long, Integer[]> entry : r.entrySet()) {
+//        Date d = new Date(entry.getKey());
+//
+//        result[i - 2] += "|" + dateFormat.format(d);
+//        for (int j = 0; j < entry.getValue().length; j++) {
+//          result[i - 2] += "," + entry.getValue()[j];
+//        }
+//      }
+//    }
+//    return result;
+    return null;
   }
 }

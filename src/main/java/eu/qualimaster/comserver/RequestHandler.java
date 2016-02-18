@@ -168,7 +168,7 @@ public class RequestHandler {
   private void initSpringDataConnector() throws Exception {
     synchronized (this) {
       springDataConnector = new DataConnector();
-      loginToSpring("katerina2", "password");
+      loginToSpring("katerina", "test");
     }
   }
 
