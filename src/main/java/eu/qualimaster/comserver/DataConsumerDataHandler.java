@@ -474,6 +474,5 @@ public class DataConsumerDataHandler implements IDataHandler {
       }
     }
     return result;
-    return null;
   }
 }
