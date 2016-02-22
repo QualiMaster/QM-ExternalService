@@ -15,6 +15,9 @@ import eu.qualimaster.adaptation.external.SwitchAlgorithmRequest;
 import eu.qualimaster.adaptation.external.UsualMessage;
 import eu.qualimaster.events.ResponseStore;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.PrintWriter;
 
 /**
@@ -24,6 +27,8 @@ public class Dispatcher implements IDispatcher {
 
   private PrintWriter printWriter;
   private ResponseStore<UsualMessage, ChangeParameterRequest, ResponseMessage> responseStore;
+
+  final static Logger logger = LoggerFactory.getLogger(Dispatcher.class);
 
   public Dispatcher(PrintWriter printWriter,
                     ResponseStore<UsualMessage, ChangeParameterRequest,
@@ -85,11 +90,15 @@ public class Dispatcher implements IDispatcher {
         } else {
           v = ",removed,";
         }
-        printWriter.println(r[0] + "_response," + result + v + r[1]);
+        printWriter.println(r[0] + "_response," + result + v + r[1] + "!");
       } else {
-        printWriter.println("change" + param + "_response," + result + ",newValue," + value);
+        printWriter.println("change" + param + "_response," + result + ",newValue," + value + "!");
       }
-
+      if (result.equals("FAILED")) {
+        logger.error("Change parameter " + param + " failed. Description: "
+                     + executionResponseMessage.getDescription()
+                     + "message id: " + executionResponseMessage.getMessageId());
+      }
     }
   }
 }

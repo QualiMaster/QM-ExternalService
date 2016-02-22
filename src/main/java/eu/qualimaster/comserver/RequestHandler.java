@@ -101,6 +101,14 @@ public class RequestHandler {
     }
   }
 
+  public void publishFocusResult(String result) {
+    synchronized (dataConsumers) {
+      for (DataConsumerDataHandler s : dataConsumers) {
+        s.consumeHubList(result);
+      }
+    }
+  }
+
   public String getQuoteList() throws Exception {
 
     String res;

@@ -43,6 +43,8 @@ public class DataProducerDataHandler implements IDataHandler {
         requestHandler.publishCorrelationResult(received);
       } else if (received.startsWith("hubList,")) {
         requestHandler.publishHubList(received);
+      } else if (received.startsWith("focusPip,")) {
+        requestHandler.publishFocusResult(received.substring(9));
       } else {  // Unknown
         logger.error("Unknown message type received: " + received);
         break;

@@ -280,19 +280,19 @@ public class DataConsumerDataHandler implements IDataHandler {
           }
         }
       } else if (received.startsWith("changewindowSize/")) {
-
+        logger.info("[consumer] got changewindowSize. Cmd = " + received);
         changeWindowSize(received.substring(17));
 
       } else if (received.startsWith("changehubListSize/")) {
-
+        logger.info("[consumer] got changehubListSize. Cmd = " + received);
         changeHubListStize(received.substring(18));
 
       } else if (received.startsWith("changeDynamicCorrelationThreshold/")) {
-
+        logger.info("[consumer] got changeDynamicCorrelationThreshold. Cmd = " + received);
         changeDynamicGraphThreshold(received.substring(34));
 
       } else if (received.startsWith("changeFocusCorrelationThreshold/")) {
-
+        logger.info("[consumer] got changeFocusCorrelationThreshold. Cmd = " + received);
         changeFocusCorrelationThreshold(received.substring(33));
 
       } else {
@@ -470,7 +470,7 @@ public class DataConsumerDataHandler implements IDataHandler {
 
     // TODO(ap0n): Read the configuration from a file
     ChangeParameterRequest<String> financialRequest =
-        new ChangeParameterRequest<>("PriorityPip", "FinancialDataSource", "playerList", command);
+        new ChangeParameterRequest<>("FocusPip", "SpringDataSource", "playerList", command);
 
     synchronized (clientEndpoint) {
       clientEndpoint.schedule(financialRequest);
