@@ -4,7 +4,6 @@ import eu.qualimaster.Configuration;
 import eu.qualimaster.ExternalHBaseConnector.TweetSentimentConnector;
 import eu.qualimaster.adaptation.external.ChangeParameterRequest;
 import eu.qualimaster.adaptation.external.ClientEndpoint;
-import eu.qualimaster.adaptation.external.RequestMessage;
 import eu.qualimaster.adaptation.external.ResponseMessage;
 import eu.qualimaster.adaptation.external.UsualMessage;
 import eu.qualimaster.comserver.adaptation.Dispatcher;
@@ -67,27 +66,29 @@ public class DataConsumerDataHandler implements IDataHandler {
     logger.info("Consumer connected from: " + socket.getInetAddress().getHostAddress());
     useFilter = true;
 
-    ResponseStore.IStoreHandler<UsualMessage, ChangeParameterRequest, ResponseMessage> handler = new ResponseStore.IStoreHandler<UsualMessage, ChangeParameterRequest, ResponseMessage>() {
-      @Override
-      public String getRequestMessageId(ChangeParameterRequest requestMessage) {
-        return requestMessage.getMessageId();
-      }
+    ResponseStore.IStoreHandler<UsualMessage, ChangeParameterRequest, ResponseMessage>
+        handler =
+        new ResponseStore.IStoreHandler<UsualMessage, ChangeParameterRequest, ResponseMessage>() {
+          @Override
+          public String getRequestMessageId(ChangeParameterRequest requestMessage) {
+            return requestMessage.getMessageId();
+          }
 
-      @Override
-      public String getResponseMessageId(ResponseMessage responseMessage) {
-        return responseMessage.getMessageId();
-      }
+          @Override
+          public String getResponseMessageId(ResponseMessage responseMessage) {
+            return responseMessage.getMessageId();
+          }
 
-      @Override
-      public ChangeParameterRequest castRequest(UsualMessage usualMessage) {
-        return ResponseStore.cast(ChangeParameterRequest.class, usualMessage);
-      }
+          @Override
+          public ChangeParameterRequest castRequest(UsualMessage usualMessage) {
+            return ResponseStore.cast(ChangeParameterRequest.class, usualMessage);
+          }
 
-      @Override
-      public ResponseMessage castResponse(UsualMessage usualMessage) {
-        return ResponseStore.cast(ResponseMessage.class, usualMessage);
-      }
-    };
+          @Override
+          public ResponseMessage castResponse(UsualMessage usualMessage) {
+            return ResponseStore.cast(ResponseMessage.class, usualMessage);
+          }
+        };
 
     responseStore = new ResponseStore<>(0, handler);
 
@@ -215,8 +216,8 @@ public class DataConsumerDataHandler implements IDataHandler {
 //          }
 //        }
 //      } else
-       if (received.startsWith("addMarketplayer/")
-                 || received.startsWith("removeMarketplayer/")) {
+      if (received.startsWith("addMarketplayer/")
+          || received.startsWith("removeMarketplayer/")) {
 
         logger.info("Got " + received);
 
@@ -278,7 +279,6 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.println("historicalSentiment_response, " + e.getMessage());
           }
         }
-
       } else if (received.startsWith("changewindowSize/")) {
 
         changeWindowSize(received.substring(17));
@@ -286,6 +286,14 @@ public class DataConsumerDataHandler implements IDataHandler {
       } else if (received.startsWith("changehubListSize/")) {
 
         changeHubListStize(received.substring(18));
+
+      } else if (received.startsWith("changeDynamicCorrelationThreshold/")) {
+
+        changeDynamicGraphThreshold(received.substring(34));
+
+      } else if (received.startsWith("changeFocusCorrelationThreshold/")) {
+
+        changeFocusCorrelationThreshold(received.substring(33));
 
       } else {
         logger.error("Unknown command received: " + received);
@@ -403,6 +411,32 @@ public class DataConsumerDataHandler implements IDataHandler {
           filter.put(pair, --ctr);
         }
       }
+    }
+  }
+
+  private void changeFocusCorrelationThreshold(String threshold) {
+
+    // TODO(ap0n): Read the configuration from a file
+    ChangeParameterRequest<Double> changeThresholdRequest =
+        new ChangeParameterRequest<>("FocusPip", "DynamicGraphCompilation",
+                                     "correlationThreshold", Double.parseDouble(threshold));
+
+    synchronized (clientEndpoint) {
+      clientEndpoint.schedule(changeThresholdRequest);
+      responseStore.sentEvent(changeThresholdRequest);
+    }
+  }
+
+  private void changeDynamicGraphThreshold(String threshold) {
+
+    // TODO(ap0n): Read the configuration from a file
+    ChangeParameterRequest<Double> changeThresholdRequest =
+        new ChangeParameterRequest<>("DynamicGraphPip", "DynamicGraphCompilation",
+                                     "correlationThreshold", Double.parseDouble(threshold));
+
+    synchronized (clientEndpoint) {
+      clientEndpoint.schedule(changeThresholdRequest);
+      responseStore.sentEvent(changeThresholdRequest);
     }
   }
 
