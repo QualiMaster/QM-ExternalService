@@ -104,7 +104,7 @@ public class RequestHandler {
   public void publishFocusResult(String result) {
     synchronized (dataConsumers) {
       for (DataConsumerDataHandler s : dataConsumers) {
-        s.consumeHubList(result);
+        s.consumeHubList(result);  // TODO(anydriotis): Call some other method (or rename this one).
       }
     }
   }
