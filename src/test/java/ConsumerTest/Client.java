@@ -18,8 +18,8 @@ public class Client {
   Boolean readingList;
 
   public Client() throws IOException {
-    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
-//    socket = new Socket("localhost", 8889);
+//    socket = new Socket("snf-618466.vm.okeanos.grnet.gr", 8889);
+    socket = new Socket("localhost", 8889);
 //    socket = new Socket("clu01.softnet.tuc.gr", 8889);
     writer = new PrintWriter(socket.getOutputStream(), true);
     reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -45,22 +45,22 @@ public class Client {
       try {
         while (true) {
           String line = in.readLine();
-          if (line.startsWith("s/")) {
+          if (line.startsWith("s,")) {
             readingResults = true;
             String command = "resultsSubscribe" + line.substring(1) + "!";
             writer.println(command);
             writer.flush();
-          } else if (line.startsWith("st/")) {
+          } else if (line.startsWith("st,")) {
             String command = "resultsUnsubscribe" + line.substring(2) + "!";
             writer.println(command);
             writer.flush();
           } else if (line.equals("l")) {
             writer.println("quoteList!");
             writer.flush();
-          } else if (line.startsWith("ap/")) {
+          } else if (line.startsWith("ap,")) {
             writer.println("addMarketplayer" + line.substring(2) + "!");
             writer.flush();
-          } else if (line.startsWith("rp/")) {
+          } else if (line.startsWith("rp,")) {
             writer.println("removeMarketplayer" + line.substring(2) + "!");
             writer.flush();
           } else if (line.equals("x")) {  // close socket
@@ -72,10 +72,10 @@ public class Client {
           } else if (line.equals("d")) {  // disconnect
             System.out.println("forcefully ending connection");
             System.exit(0);
-          } else if (line.startsWith("cws/")) {
-            writer.println("changewindowSize/" + line.substring(4) + "!");
-          } else if (line.startsWith("chs/")) {
-            writer.println("changehubListSize/" + line.substring(4) + "!");
+          } else if (line.startsWith("cws,")) {
+            writer.println("changewindowSize," + line.substring(4) + "!");
+          } else if (line.startsWith("chs,")) {
+            writer.println("changehubListSize," + line.substring(4) + "!");
           } else {
             writer.println(line + "!");
             writer.flush();
@@ -138,6 +138,5 @@ public class Client {
     Client c = new Client();
 
     c.stressTest();
-
   }
 }

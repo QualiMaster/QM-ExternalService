@@ -216,11 +216,11 @@ public class DataConsumerDataHandler implements IDataHandler {
 //          }
 //        }
 //      } else
-      if (received.startsWith("addMarketplayer/")
-          || received.startsWith("removeMarketplayer/")) {
+      if (received.startsWith("addMarketplayer,")
+          || received.startsWith("removeMarketplayer,")) {
 
         logger.info("Got " + received);
-
+        received = received.replaceFirst(",", "/");  // TODO: workaround for now.
         editMarketPlayerList(received.substring(0, received.length()));  // Strip the '!'
       } else if (received.equals("quoteList")) {  // Send Symbols List command
         logger.info("Got quoteList");
@@ -236,7 +236,7 @@ public class DataConsumerDataHandler implements IDataHandler {
             logger.error(e.getMessage(), e);
           }
         }
-      } else if (received.startsWith("resultsSubscribe/")) {  // Start sending results command
+      } else if (received.startsWith("resultsSubscribe,")) {  // Start sending results command
 
         logger.info("[consumer] got resultsSubscribe");
 
@@ -246,7 +246,7 @@ public class DataConsumerDataHandler implements IDataHandler {
           printWriter.println("resultsSubscribe_response, resultsSubscribe ok");
         }
 
-      } else if (received.startsWith("resultsUnsubscribe/")) {  // Stop sending results command
+      } else if (received.startsWith("resultsUnsubscribe,")) {  // Stop sending results command
         logger.info("[consumer] got resultsUnsubscribe");
 
         // "resultsUnsubscribe/".length = 19
@@ -256,7 +256,7 @@ public class DataConsumerDataHandler implements IDataHandler {
           printWriter.println("resultsUnsubscribe_response, resultsUnsubscribe ok");
         }
 
-      } else if (received.startsWith("requestHistoricalSentiment/")) {
+      } else if (received.startsWith("requestHistoricalSentiment,")) {
         logger.info("[consumer] got resultsHistoricalSentiment. Cmd = " + received);
         try {
 
@@ -279,19 +279,19 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.println("historicalSentiment_response, " + e.getMessage());
           }
         }
-      } else if (received.startsWith("changewindowSize/")) {
+      } else if (received.startsWith("changewindowSize,")) {
         logger.info("[consumer] got changewindowSize. Cmd = " + received);
         changeWindowSize(received.substring(17));
 
-      } else if (received.startsWith("changehubListSize/")) {
+      } else if (received.startsWith("changehubListSize,")) {
         logger.info("[consumer] got changehubListSize. Cmd = " + received);
         changeHubListStize(received.substring(18));
 
-      } else if (received.startsWith("changeDynamicCorrelationThreshold/")) {
+      } else if (received.startsWith("changeDynamicCorrelationThreshold,")) {
         logger.info("[consumer] got changeDynamicCorrelationThreshold. Cmd = " + received);
         changeDynamicGraphThreshold(received.substring(34));
 
-      } else if (received.startsWith("changeFocusCorrelationThreshold/")) {
+      } else if (received.startsWith("changeFocusCorrelationThreshold,")) {
         logger.info("[consumer] got changeFocusCorrelationThreshold. Cmd = " + received);
         changeFocusCorrelationThreshold(received.substring(33));
 
