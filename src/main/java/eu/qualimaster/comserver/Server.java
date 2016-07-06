@@ -1,24 +1,16 @@
 package eu.qualimaster.comserver;
 
-import eu.qualimaster.Configuration;
-import eu.qualimaster.ExternalHBaseConnector.TweetSentimentConnector;
-import eu.qualimaster.adaptation.external.ClientEndpoint;
-import eu.qualimaster.comserver.adaptation.Dispatcher;
+import eu.qualimaster.adaptation.AdaptationConfiguration;
+import eu.qualimaster.dataManagement.DataManagementConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TreeMap;
 
 /**
  * Created by ap0n on 1/14/15.
@@ -96,10 +88,12 @@ public class Server {
    */
   private void initializeEndpoint(String configurationFile) throws IOException {
 
-    Configuration.configure(new File(configurationFile));
+//    Configuration.configure(new File(configurationFile));
+    AdaptationConfiguration.configure(new File(configurationFile));
+//    DataManagementConfiguration.configure(new File(configurationFile));
 
-    logger.info("Host: " + Configuration.getAdaptationHost());
-    logger.info("Port: " + Configuration.getAdaptationPort());
+    logger.info("Adaptation Host: " + AdaptationConfiguration.getAdaptationHost());
+    logger.info("Adaptation Port: " + AdaptationConfiguration.getAdaptationPort());
   }
 
   private class ServerRunnable implements Runnable {

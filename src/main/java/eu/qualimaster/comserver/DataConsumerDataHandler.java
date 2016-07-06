@@ -1,12 +1,13 @@
 package eu.qualimaster.comserver;
 
-import eu.qualimaster.Configuration;
 import eu.qualimaster.ExternalHBaseConnector.TweetSentimentConnector;
+import eu.qualimaster.adaptation.AdaptationConfiguration;
 import eu.qualimaster.adaptation.external.ChangeParameterRequest;
 import eu.qualimaster.adaptation.external.ClientEndpoint;
 import eu.qualimaster.adaptation.external.ResponseMessage;
 import eu.qualimaster.adaptation.external.UsualMessage;
 import eu.qualimaster.comserver.adaptation.Dispatcher;
+import eu.qualimaster.dataManagement.accounts.PasswordStore;
 import eu.qualimaster.events.ResponseStore;
 
 import org.slf4j.Logger;
@@ -44,6 +45,10 @@ public class DataConsumerDataHandler implements IDataHandler {
   private Map<String, Integer> filter;
   private boolean useFilter;
 
+  private boolean loggedIn;
+  private String userName;
+  private String role;  // TODO(ap0n): Add an enum for roles
+
   // *Warning* Lock clientEntpoint before using it!
   private TweetSentimentConnector tweetSentimentConnector;
 
@@ -65,6 +70,9 @@ public class DataConsumerDataHandler implements IDataHandler {
     filter = new HashMap<>();
     logger.info("Consumer connected from: " + socket.getInetAddress().getHostAddress());
     useFilter = true;
+
+    loggedIn = false;
+    userName = "";
 
     ResponseStore.IStoreHandler<UsualMessage, ChangeParameterRequest, ResponseMessage>
         handler =
@@ -93,11 +101,10 @@ public class DataConsumerDataHandler implements IDataHandler {
     responseStore = new ResponseStore<>(0, handler);
 
     Dispatcher dispatcher = new Dispatcher(printWriter, responseStore);
-
     clientEndpoint =
         new ClientEndpoint(dispatcher,
-                           InetAddress.getByName(Configuration.getAdaptationHost()),
-                           Configuration.getAdaptationPort());
+                           InetAddress.getByName(AdaptationConfiguration.getAdaptationHost()),
+                           AdaptationConfiguration.getAdaptationPort());
 
     tweetSentimentConnector = new TweetSentimentConnector();
   }
@@ -120,104 +127,32 @@ public class DataConsumerDataHandler implements IDataHandler {
         break;  // socket has been closed
       }
 
-//      if (received.startsWith("login/")) { // Login command
-//        synchronized (printWriter) {
-//          try {
-//            String reply = requestHandler.loginUser(received);
-//            logger.info("Sending login response");
-//            printWriter.println("login_response," + reply);
-//            printWriter.flush();
-//          } catch (Exception e) {
-//            String reply = "error: " + e.getMessage() + ". Please try again.";
-//            printWriter.println("login_response," + reply);
-//            logger.error(e.getMessage(), e);
-//          }
-//        }
-//      } else if (received.startsWith("logout")) { // StartsWith used to avoid Windows socket problem
-//        synchronized (printWriter) {
-//          try {
-//            String reply = requestHandler.logoutUser();
-//            logger.info("Sending logout response");
-//            printWriter.println("logout_response," + reply);
-//            printWriter.flush();
-//          } catch (Exception e) {
-//            String reply = "error: " + e.getMessage() + ". Please try again.";
-//            printWriter.println("logout_response," + reply);
-//            logger.error(e.getMessage(), e);
-//          }
-//        }
-//      } else if (received
-//          .startsWith("setGlobalAnalysisInterval/")) { // Set global analysis interval command
-//        logger.info("Got setGlobalAnalysisInterval");
-//        synchronized (printWriter) {
-//          try {
-//            String[] parts = received.split("/"); // e.g. "setGlobalAnalysisInterval/1000"
-//            int interval = Integer.parseInt(parts[1]);
-//            String reply = requestHandler.setGlobalAnalysisInterval(interval);
-//            printWriter.println("setGlobalAnalysisInterval_response," + reply);
-//            printWriter.flush();
-//          } catch (Exception e) {
-//            String reply = "error: " + e.getMessage() + ". Please try again.";
-//            printWriter.println("setGlobalAnalysisInterval_response," + reply);
-//            logger.error(e.getMessage(), e);
-//          }
-//        }
-//      } else if (received.equals("requestDependencyAnalysis")) { // Request dependency analysis
-//        logger.info("Got requestDependencyAnalysis");
-//        synchronized (printWriter) {
-//          try {
-//            String reply = requestHandler.requestDependencyAnalysis();
-//            printWriter.println("requestDependencyAnalysis_response," + reply);
-//            printWriter.flush();
-//          } catch (Exception e) {
-//            String reply = "error: " + e.getMessage() + ". Please try again.";
-//            printWriter.println("requestDependencyAnalysis_response," + reply);
-//            logger.error(e.getMessage(), e);
-//          }
-//        }
-//      } else if (received.equals("stopDependencyAnalysis")) { // Stop dependency analysis
-//        logger.info("Got stopDependencyAnalysis");
-//        synchronized (printWriter) {
-//          try {
-//            String reply = requestHandler.stopDependencyAnalysis();
-//            printWriter.println("stopDependencyAnalysis_response," + reply);
-//            printWriter.flush();
-//          } catch (Exception e) {
-//            String reply = "error: " + e.getMessage() + ". Please try again.";
-//            printWriter.println("stopDependencyAnalysis_response," + reply);
-//            logger.error(e.getMessage(), e);
-//          }
-//        }
-//      } else if (received.equals("requestHistoricalDependency")) { // Request historical dependency
-//        logger.info("Got requestHistoricalDependency");
-//        synchronized (printWriter) {
-//          try {
-//            String reply = requestHandler.requestHistoricalDependency();
-//            printWriter.println("requestHistoricalDependency_response," + reply);
-//            printWriter.flush();
-//          } catch (Exception e) {
-//            String reply = "error: " + e.getMessage() + ". Please try again.";
-//            printWriter.println("requestHistoricalDependency_response," + reply);
-//            logger.error(e.getMessage(), e);
-//          }
-//        }
-//      } else if (received
-//          .startsWith("setAdaptationParameter/")) { // Set adaptation parameter command
-//        logger.info("Got setAdaptationParameter");
-//        synchronized (printWriter) {
-//          try {
-//            String reply = requestHandler.setAdaptationParameter(received);
-//            printWriter.println("setAdaptationParameter_response," + reply);
-//            printWriter.flush();
-//          } catch (Exception e) {
-//            String reply = "error: " + e.getMessage() + ". Please try again.";
-//            printWriter.println("setAdaptationParameter_response," + reply);
-//            logger.error(e.getMessage(), e);
-//          }
-//        }
-//      } else
-      if (received.startsWith("addMarketplayer,")
-          || received.startsWith("removeMarketplayer,")) {
+      if (received.startsWith("login,")) { // Login command
+        synchronized (printWriter) {
+          try {
+            String reply = login(received.substring(6, received.length()));
+            logger.info("Sending login response");
+            printWriter.println("login_response," + reply);
+            printWriter.flush();
+          } catch (Exception e) {
+            String reply = "error: " + e.getMessage() + ". Please try again.";
+            printWriter.println("login_response," + reply);
+            logger.error(e.getMessage(), e);
+          }
+        }
+      } else if (!loggedIn) {  // Only login is allowed while not logged-in
+        synchronized (printWriter) {
+          printWriter.println(received + "_response,not logged in");
+          printWriter.flush();
+        }
+      } else if (received.startsWith("logout")) {
+        synchronized (printWriter) {
+          String reply = logout();
+          printWriter.println("logout_response," + reply);
+          printWriter.flush();
+        }
+      } else if (received.startsWith("addMarketplayer,")
+                 || received.startsWith("removeMarketplayer,")) {
 
         logger.info("Got " + received);
         received = received.replaceFirst(",", "/");  // TODO: workaround for now.
@@ -313,6 +248,36 @@ public class DataConsumerDataHandler implements IDataHandler {
     }
   }
 
+  private String login(String credentials) {
+    String[] parts = credentials.split(","); // e.g. "userA,qualimaster"
+    String user, password;
+    if (parts.length == 2) {
+      user = parts[0];
+      password = parts[1];
+    } else {
+      return "Invalid command";
+    }
+
+    PasswordStore.PasswordEntry entry = PasswordStore.getEntry("serviceUsers/" + user);
+
+    String reply = "failed";
+    if (user.equals(entry.getUserName()) && password.equals(entry.getPassword())) {
+      loggedIn = true;
+      userName = user;
+      role = entry.getValue("role");
+      logger.info("User " + userName + " logged-in");
+      reply = "ok," + role;
+    }
+    return reply;
+  }
+
+  private String logout() {
+    logger.info("User " + userName + " logged-out");
+    loggedIn = false;
+    userName = "";
+    return "ok";
+  }
+
   public void consumeHubList(String hubList) {
     synchronized (printWriter) {
       printWriter.println(hubList + "!");
@@ -335,16 +300,19 @@ public class DataConsumerDataHandler implements IDataHandler {
   private String readString() throws IOException {
     StringBuilder response = new StringBuilder();
     int c;
-    while (inputStreamReader != null && (c = inputStreamReader.read()) != -1) {
+    while (inputStreamReader != null) {
+      c = inputStreamReader.read();
+      if (c == -1) {
+        return null;
+      }
       if ((char) c == '!') {  // All messages are separated by !
         break;
       }
       response.append((char) c);
     }
     String res = response.toString();
-    if (res.equals("")) {
-      return null;
-    } else if (res.startsWith("\n")) {
+
+    if (res.startsWith("\n")) {
       return res.substring(1);
     }
     return res;

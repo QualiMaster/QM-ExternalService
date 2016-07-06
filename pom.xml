@@ -18,13 +18,34 @@
         </repository>
     </repositories>
 
+    <!--<dependencyManagement>-->
+        <!--<dependencies>-->
+            <!--&lt;!&ndash; add if infrastructure dependencies(storm, hdfs and hbase) are involved &ndash;&gt;-->
+            <!--<dependency>-->
+                <!--<groupId>eu.qualimaster</groupId>-->
+                <!--<artifactId>InfrastructureDependencies</artifactId>-->
+                <!--&lt;!&ndash;<version>0.5.0-SNAPSHOT</version>&ndash;&gt;-->
+                <!--<type>pom</type>-->
+                <!--<scope>import</scope>-->
+            <!--</dependency>-->
+            <!--&lt;!&ndash; add if pipeline dependencies(StormCommons and QualiMaster.Events) are involved &ndash;&gt;-->
+            <!--<dependency>-->
+                <!--<groupId>eu.qualimaster</groupId>-->
+                <!--<artifactId>PipelineDependencies</artifactId>-->
+                <!--<version>0.5.0-SNAPSHOT</version>-->
+                <!--<type>pom</type>-->
+                <!--<scope>import</scope>-->
+            <!--</dependency>-->
+        <!--</dependencies>-->
+    <!--</dependencyManagement>-->
+
     <dependencies>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.10</version>
-            <scope>compile</scope>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.slf4j</groupId>-->
+            <!--<artifactId>slf4j-log4j12</artifactId>-->
+            <!--<version>1.7.10</version>-->
+            <!--<scope>compile</scope>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>eu.qualimaster</groupId>
             <artifactId>spring-client</artifactId>
@@ -33,17 +54,37 @@
         <dependency>
             <groupId>eu.qualimaster</groupId>
             <artifactId>AdaptationLayer.External</artifactId>
-            <version>0.2.0-SNAPSHOT</version>
+            <version>0.5.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.qualimaster</groupId>
+            <artifactId>AdaptationLayer</artifactId>
+            <version>0.5.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.qualimaster</groupId>
+            <artifactId>MonitoringLayer</artifactId>
+            <version>0.5.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.qualimaster</groupId>
+            <artifactId>CoordinationLayer</artifactId>
+            <version>0.5.0-SNAPSHOT</version>
         </dependency>
         <dependency>  <!-- for adaptation events -->
             <groupId>eu.qualimaster</groupId>
             <artifactId>QualiMaster.Events</artifactId>
-            <version>0.2.0-SNAPSHOT</version>
+            <version>0.5.0-SNAPSHOT</version>
         </dependency>
         <dependency>  <!-- for HBAse communication -->
             <groupId>eu.qualimaster</groupId>
             <artifactId>ExternalHBaseConnector</artifactId>
             <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.qualimaster</groupId>
+            <artifactId>DataManagementLayer</artifactId>
+            <version>0.5.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

@@ -1,6 +1,7 @@
 package eu.qualimaster.comserver;
 
 import eu.qualimaster.algorithms.imp.correlation.spring.DataConnector;
+import eu.qualimaster.dataManagement.accounts.PasswordStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 
 /**
  * Created by ap0n on 1/15/15.
@@ -21,54 +21,9 @@ public class RequestHandler {
   private Logger logger = LoggerFactory.getLogger(Server.class);
 
   private int globalAnalysisInterval;
-  // For dummy login demo
-  private String username;
-  private String password;
-  // End dummy login demo
 
   public RequestHandler() throws Exception {
     dataConsumers = new ArrayList<DataConsumerDataHandler>();
-    // For dummy login demo
-    username = "";
-    password = "";
-    // End dummy login demo
-  }
-
-  public String loginUser(String received) {
-
-    // TODO(npavlakis): Read users/passwords from a file
-
-    String[] parts = received.split("/"); // e.g. "login/userA/qualimaster"
-    String uname, passwd;
-    if (parts.length == 3) {
-      uname = parts[1];
-      passwd = parts[2];
-    } else {
-      return "Invalid command structure.";
-    }
-    String
-        reply =
-        "Failed to authenticate user with username : " + uname + " and password : " + passwd;
-    if (uname.equals("userA") && passwd.equals("qualimaster")) {
-      reply =
-          "Successfully authenticated user with username : " + uname + " and password : " + passwd;
-      username = uname;
-      password = passwd;
-    } else {
-      username = "";
-      password = "";
-    }
-    return reply;
-  }
-
-  public String logoutUser() {
-    String reply = "User already logged out.";
-    if (!username.equals("")) {
-      reply = "Successfully logged user with username : " + username + " out";
-      username = "";
-      password = "";
-    }
-    return reply;
   }
 
   public void subscribeConsumer(DataConsumerDataHandler consumer) {
@@ -176,40 +131,8 @@ public class RequestHandler {
   private void initSpringDataConnector() throws Exception {
     synchronized (this) {
       springDataConnector = new DataConnector();
-      loginToSpring("katerina", "test");
+      PasswordStore.PasswordEntry entry = PasswordStore.getEntry("katerina");
+      loginToSpring(entry.getUserName(), entry.getPassword());
     }
-  }
-
-  //TODO Pass globalAnalysisInterval wherever needed.
-  public String setGlobalAnalysisInterval(int globalAnalysisInterval) {
-    this.globalAnalysisInterval = globalAnalysisInterval;
-    return "Successfully set globalAnalysisInterval to " + globalAnalysisInterval + ".";
-  }
-
-  //TODO Pass adaptation parameter wherever needed.
-  public String setAdaptationParameter(String received) {
-    String[] parts = received.split("/"); // e.g. "setAdaptationParameter/someInterval/1000"
-    if (parts.length == 3) {
-      String parameter = parts[1];
-      String value = parts[2];
-      return "Successfully set " + parameter + " to " + value;
-    } else {
-      return "Invalid command structure.";
-    }
-  }
-
-  public String requestDependencyAnalysis() {
-    String reply = "Starting Dependency Analysis";
-    return reply;
-  }
-
-  public String stopDependencyAnalysis() {
-    String reply = "Stopping Dependency Analysis";
-    return reply;
-  }
-
-  public String requestHistoricalDependency() {
-    String reply = "Starting Historical Dependency Analysis";
-    return reply;
   }
 }

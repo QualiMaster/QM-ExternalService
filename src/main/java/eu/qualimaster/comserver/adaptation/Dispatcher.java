@@ -2,6 +2,7 @@ package eu.qualimaster.comserver.adaptation;
 
 import eu.qualimaster.adaptation.external.AlgorithmChangedMessage;
 import eu.qualimaster.adaptation.external.ChangeParameterRequest;
+import eu.qualimaster.adaptation.external.CloudPipelineMessage;
 import eu.qualimaster.adaptation.external.DisconnectRequest;
 import eu.qualimaster.adaptation.external.ExecutionResponseMessage;
 import eu.qualimaster.adaptation.external.HardwareAliveMessage;
@@ -10,13 +11,19 @@ import eu.qualimaster.adaptation.external.LoggingFilterRequest;
 import eu.qualimaster.adaptation.external.LoggingMessage;
 import eu.qualimaster.adaptation.external.MonitoringDataMessage;
 import eu.qualimaster.adaptation.external.PipelineMessage;
+import eu.qualimaster.adaptation.external.PipelineStatusRequest;
+import eu.qualimaster.adaptation.external.PipelineStatusResponse;
+import eu.qualimaster.adaptation.external.ReplayMessage;
 import eu.qualimaster.adaptation.external.ResponseMessage;
 import eu.qualimaster.adaptation.external.SwitchAlgorithmRequest;
+import eu.qualimaster.adaptation.external.UpdateCloudResourceMessage;
 import eu.qualimaster.adaptation.external.UsualMessage;
 import eu.qualimaster.events.ResponseStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.PrintWriter;
 
@@ -25,10 +32,9 @@ import java.io.PrintWriter;
  */
 public class Dispatcher implements IDispatcher {
 
+  final static Logger logger = LoggerFactory.getLogger(Dispatcher.class);
   private PrintWriter printWriter;
   private ResponseStore<UsualMessage, ChangeParameterRequest, ResponseMessage> responseStore;
-
-  final static Logger logger = LoggerFactory.getLogger(Dispatcher.class);
 
   public Dispatcher(PrintWriter printWriter,
                     ResponseStore<UsualMessage, ChangeParameterRequest,
@@ -100,5 +106,31 @@ public class Dispatcher implements IDispatcher {
                      + "message id: " + executionResponseMessage.getMessageId());
       }
     }
+  }
+
+  @Override
+  public void handlePipelineStatusRequest(PipelineStatusRequest pipelineStatusRequest) {
+    throw new NotImplementedException();
+  }
+
+  @Override
+  public void handlePipelineStatusResponse(PipelineStatusResponse pipelineStatusResponse) {
+    throw new NotImplementedException();
+  }
+
+  @Override
+  public void handleUpdateCloudResourceMessage(
+      UpdateCloudResourceMessage updateCloudResourceMessage) {
+    throw new NotImplementedException();
+  }
+
+  @Override
+  public void handleCloudPipelineMessage(CloudPipelineMessage cloudPipelineMessage) {
+    throw new NotImplementedException();
+  }
+
+  @Override
+  public void handleReplayMessage(ReplayMessage replayMessage) {
+    throw new NotImplementedException();
   }
 }
