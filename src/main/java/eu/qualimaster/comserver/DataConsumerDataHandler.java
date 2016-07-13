@@ -130,7 +130,12 @@ public class DataConsumerDataHandler implements IDataHandler {
       if (received.startsWith("login,")) { // Login command
         synchronized (printWriter) {
           try {
-            String reply = login(received.substring(6, received.length()));
+            String reply;
+            if (loggedIn) {
+              reply = "already logged in";
+            } else {
+              reply = login(received.substring(6, received.length()));
+            }
             logger.info("Sending login response");
             printWriter.println("login_response," + reply);
             printWriter.flush();
