@@ -4,9 +4,9 @@ import eu.qualimaster.adaptation.external.AlgorithmChangedMessage;
 import eu.qualimaster.adaptation.external.ChangeParameterRequest;
 import eu.qualimaster.adaptation.external.CloudPipelineMessage;
 import eu.qualimaster.adaptation.external.DisconnectRequest;
+import eu.qualimaster.adaptation.external.DispatcherAdapter;
 import eu.qualimaster.adaptation.external.ExecutionResponseMessage;
 import eu.qualimaster.adaptation.external.HardwareAliveMessage;
-import eu.qualimaster.adaptation.external.IDispatcher;
 import eu.qualimaster.adaptation.external.LoggingFilterRequest;
 import eu.qualimaster.adaptation.external.LoggingMessage;
 import eu.qualimaster.adaptation.external.MonitoringDataMessage;
@@ -27,10 +27,12 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.PrintWriter;
 
+import static eu.qualimaster.adaptation.external.ExecutionResponseMessage.ResultType.SUCCESSFUL;
+
 /**
  * Created by ap0n on 26/1/2016.
  */
-public class Dispatcher implements IDispatcher {
+public class Dispatcher extends DispatcherAdapter {
 
   final static Logger logger = LoggerFactory.getLogger(Dispatcher.class);
   private PrintWriter printWriter;
@@ -86,7 +88,7 @@ public class Dispatcher implements IDispatcher {
       ChangeParameterRequest req = responseStore.receivedEvent(executionResponseMessage);
       String param = req.getParameter();
       String value = req.getValue().toString();
-      String result = executionResponseMessage.getResult().toString();
+      int res = executionResponseMessage.getResult() == SUCCESSFUL ? 1 : 0;
 
       if (param.equals("playerList")) {
         String[] r = value.split("/");
@@ -96,11 +98,12 @@ public class Dispatcher implements IDispatcher {
         } else {
           v = ",removed,";
         }
-        printWriter.println(r[0] + "_response," + result + v + r[1] + "!");
+        printWriter.println(r[0] + "_response," + res + v + r[1] + "!");
       } else {
-        printWriter.println("change" + param + "_response," + result + ",newValue," + value + "!");
+        printWriter.println("change" + param + "_response," + res + ",newValue," + value + "!");
       }
-      if (result.equals("FAILED")) {
+
+      if (res == 0) {
         logger.error("Change parameter " + param + " failed. Description: "
                      + executionResponseMessage.getDescription()
                      + "message id: " + executionResponseMessage.getMessageId());

@@ -106,7 +106,7 @@ public class DataConsumerDataHandler implements IDataHandler {
                            InetAddress.getByName(AdaptationConfiguration.getAdaptationHost()),
                            AdaptationConfiguration.getAdaptationPort());
 
-    tweetSentimentConnector = new TweetSentimentConnector();
+//    tweetSentimentConnector = new TweetSentimentConnector();
   }
 
   public void run() {
@@ -132,7 +132,7 @@ public class DataConsumerDataHandler implements IDataHandler {
           try {
             String reply;
             if (loggedIn) {
-              reply = "already logged in";
+              reply = "0,already logged in";
             } else {
               reply = login(received.substring(6, received.length()));
             }
@@ -140,14 +140,14 @@ public class DataConsumerDataHandler implements IDataHandler {
             printWriter.println("login_response," + reply);
             printWriter.flush();
           } catch (Exception e) {
-            String reply = "error: " + e.getMessage() + ". Please try again.";
+            String reply = "0,error: " + e.getMessage() + ". Please try again.";
             printWriter.println("login_response," + reply);
             logger.error(e.getMessage(), e);
           }
         }
       } else if (!loggedIn) {  // Only login is allowed while not logged-in
         synchronized (printWriter) {
-          printWriter.println(received + "_response,not logged in");
+          printWriter.println(received + "_response,0,not logged in");
           printWriter.flush();
         }
       } else if (received.startsWith("logout")) {
@@ -156,12 +156,6 @@ public class DataConsumerDataHandler implements IDataHandler {
           printWriter.println("logout_response," + reply);
           printWriter.flush();
         }
-      } else if (received.startsWith("addMarketplayer,")
-                 || received.startsWith("removeMarketplayer,")) {
-
-        logger.info("Got " + received);
-        received = received.replaceFirst(",", "/");  // TODO: workaround for now.
-        editMarketPlayerList(received.substring(0, received.length()));  // Strip the '!'
       } else if (received.equals("quoteList")) {  // Send Symbols List command
         logger.info("Got quoteList");
         synchronized (printWriter) {
@@ -180,20 +174,20 @@ public class DataConsumerDataHandler implements IDataHandler {
 
         logger.info("[consumer] got resultsSubscribe");
 
-        // "resultsSubscribe/".length = 17
+        // "resultsSubscribe,".length = 17
         addToFilter(received.substring(17));
         synchronized (printWriter) {
-          printWriter.println("resultsSubscribe_response, resultsSubscribe ok");
+          printWriter.println("resultsSubscribe_response,1");
         }
 
       } else if (received.startsWith("resultsUnsubscribe,")) {  // Stop sending results command
         logger.info("[consumer] got resultsUnsubscribe");
 
-        // "resultsUnsubscribe/".length = 19
+        // "resultsUnsubscribe,".length = 19
         removeFromFilter(received.substring(19));
 
         synchronized (printWriter) {
-          printWriter.println("resultsUnsubscribe_response, resultsUnsubscribe ok");
+          printWriter.println("resultsUnsubscribe_response,1");
         }
 
       } else if (received.startsWith("requestHistoricalSentiment,")) {
@@ -201,7 +195,7 @@ public class DataConsumerDataHandler implements IDataHandler {
         try {
 
           synchronized (printWriter) {
-            printWriter.println("historicalSentiment_response, historicalSentimantResponse ok");
+            printWriter.println("historicalSentiment_response,1");
           }
 
           String[] reply = requestHistoricalSentiment(received.substring(27));
@@ -216,9 +210,15 @@ public class DataConsumerDataHandler implements IDataHandler {
           logger.error(e.getMessage(), e);
 
           synchronized (printWriter) {
-            printWriter.println("historicalSentiment_response, " + e.getMessage());
+            printWriter.println("historicalSentiment_response,0, " + e.getMessage());
           }
         }
+      } else if (received.startsWith("addMarketplayer,")
+                 || received.startsWith("removeMarketplayer,")) {
+
+        logger.info("Got " + received);
+        received = received.replaceFirst(",", "/");  // TODO: workaround for now.
+        editMarketPlayerList(received.substring(0, received.length()));  // Strip the '!'
       } else if (received.startsWith("changewindowSize,")) {
         logger.info("[consumer] got changewindowSize. Cmd = " + received);
         changeWindowSize(received.substring(17));
@@ -235,10 +235,14 @@ public class DataConsumerDataHandler implements IDataHandler {
         logger.info("[consumer] got changeFocusCorrelationThreshold. Cmd = " + received);
         changeFocusCorrelationThreshold(received.substring(33));
 
+      } else if (received.startsWith("requestSnapshots,")) {
+        logger.info("[consumer] get requestSnapshots. Cmd = " + received);
+        requestSanpshots(received.substring(17));
+
       } else {
         logger.error("Unknown command received: " + received);
         synchronized (printWriter) {
-          printWriter.println("Unknown command received: " + received);
+          printWriter.println(received + "_response,0,Unknown command");
         }
       }
     }
@@ -260,18 +264,18 @@ public class DataConsumerDataHandler implements IDataHandler {
       user = parts[0];
       password = parts[1];
     } else {
-      return "Invalid command";
+      return "0,Invalid command";
     }
 
     PasswordStore.PasswordEntry entry = PasswordStore.getEntry("serviceUsers/" + user);
 
-    String reply = "failed";
+    String reply = "0,failed";
     if (user.equals(entry.getUserName()) && password.equals(entry.getPassword())) {
       loggedIn = true;
       userName = user;
       role = entry.getValue("role");
       logger.info("User " + userName + " logged-in");
-      reply = "ok," + role;
+      reply = "1," + role;
     }
     return reply;
   }
@@ -280,10 +284,10 @@ public class DataConsumerDataHandler implements IDataHandler {
     logger.info("User " + userName + " logged-out");
     loggedIn = false;
     userName = "";
-    return "ok";
+    return "1";
   }
 
-  public void consumeHubList(String hubList) {
+  public void consumeResult(String hubList) {
     synchronized (printWriter) {
       printWriter.println(hubList + "!");
       printWriter.flush();
@@ -449,6 +453,16 @@ public class DataConsumerDataHandler implements IDataHandler {
       clientEndpoint.schedule(financialRequest);
       responseStore.sentEvent(financialRequest);
     }
+  }
+
+  private void requestSanpshots(String request) {
+    // request format: MM/dd/YYYY,HH:mm:ss,MM/dd/YYYY,HH:mm:ss
+
+    //setParameterSnapshotQuery
+    ChangeParameterRequest<String> snapshotsRequest = new ChangeParameterRequest<>("TimeTravelPip",
+                                                                                   "queries",
+                                                                                   "snapshotQuery",
+                                                                                   request);
   }
 
   public String[] requestHistoricalSentiment(String request) throws ParseException {

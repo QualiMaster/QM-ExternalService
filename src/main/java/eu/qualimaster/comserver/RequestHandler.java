@@ -51,7 +51,7 @@ public class RequestHandler {
   public void publishHubList(String hubList) {
     synchronized (dataConsumers) {
       for (DataConsumerDataHandler s : dataConsumers) {
-        s.consumeHubList(hubList);
+        s.consumeResult(hubList);
       }
     }
   }
@@ -59,7 +59,15 @@ public class RequestHandler {
   public void publishFocusResult(String result) {
     synchronized (dataConsumers) {
       for (DataConsumerDataHandler s : dataConsumers) {
-        s.consumeHubList(result);  // TODO(anydriotis): Call some other method (or rename this one).
+        s.consumeResult(result);
+      }
+    }
+  }
+
+  public void publishSnapshotsResult(String result) {
+    synchronized (dataConsumers) {
+      for (DataConsumerDataHandler s : dataConsumers) {
+        s.consumeResult(result);
       }
     }
   }
@@ -77,19 +85,12 @@ public class RequestHandler {
         while (springDataConnector.fullQuoteListResponce == "") {
           springDataConnector.execute();
         }
+        res = "1," + springDataConnector.fullQuoteListResponce;
         logger.info("Symbols fetched");
       } catch (IOException e) {
-        try {
-          logger.info("Error getting symbols. Closing connection and retrying");
-          springDataConnector.stopRunning();
-          initSpringDataConnector();
-          springDataConnector.getSymbols();
-        } catch (Exception ex) {
-          logger.error("SERVER: Get Symbols Error, " + ex.getMessage());
-          throw new Exception("SERVER: Get Symbols Error : " + ex.getMessage());
-        }
+        logger.error("SERVER: Get Symbols Error, " + e.getMessage());
+        res = "0,Error while getting symbols";
       }
-      res = springDataConnector.fullQuoteListResponce;
       springDataConnector.stopRunning();
       springDataConnector = null;
     }
