@@ -49,12 +49,12 @@ public class DataConsumerDataHandler implements IDataHandler {
   private String userName;
   private String role;  // TODO(ap0n): Add an enum for roles
 
-  // *Warning* Lock clientEntpoint before using it!
-  private TweetSentimentConnector tweetSentimentConnector;
-
   private ResponseStore<UsualMessage, ChangeParameterRequest, ResponseMessage> responseStore;
 
+  // *Warning* Lock clientEntpoint before using it!
   private ClientEndpoint clientEndpoint;  // For sending user commands to the infrastructure.
+
+  private TweetSentimentConnector tweetSentimentConnector;
   private Logger logger = LoggerFactory.getLogger(DataConsumerDataHandler.class);
   private DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 
@@ -433,8 +433,11 @@ public class DataConsumerDataHandler implements IDataHandler {
   public void changeWindowSize(String windowSize) {
 
     // TODO(ap0n): Read the configuration from a file
+//    ChangeParameterRequest<Integer> changeWindowRequest =
+//        new ChangeParameterRequest<>("DynamicGraphPip", "DynamicHubComputation", "windowSize",
+//                                     Integer.valueOf(windowSize));
     ChangeParameterRequest<Integer> changeWindowRequest =
-        new ChangeParameterRequest<>("DynamicGraphPip", "DynamicHubComputation", "windowSize",
+        new ChangeParameterRequest<>("PriorityPip", "FinancialCorrelation", "windowSize",
                                      Integer.valueOf(windowSize));
 
     synchronized (clientEndpoint) {
@@ -463,6 +466,10 @@ public class DataConsumerDataHandler implements IDataHandler {
                                                                                    "queries",
                                                                                    "snapshotQuery",
                                                                                    request);
+    synchronized (clientEndpoint) {
+      clientEndpoint.schedule(snapshotsRequest);
+      responseStore.sent(snapshotsRequest);
+    }
   }
 
   public String[] requestHistoricalSentiment(String request) throws ParseException {
