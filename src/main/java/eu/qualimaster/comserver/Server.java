@@ -59,8 +59,9 @@ public class Server {
       }
     }
 
-    int producerPort = 8888;
-    int consumerPort = 8889;
+    // Default ports
+    int producerPort = isReplay ? 7788 : 8888;
+    int consumerPort = isReplay ? 7789 : 8889;
 
     String properties_path = "/var/nfs/qm/tsi/external-service.properties";
 
