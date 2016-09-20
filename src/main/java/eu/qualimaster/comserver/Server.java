@@ -35,6 +35,10 @@ public class Server {
     this.consumerPort = consumerPort;
     soTimeout = 500;
 
+    logger.info("Producer port: " + producerPort);
+    logger.info("Consumer port: " + consumerPort);
+    logger.info("Is replay: " + isReplay);
+
     initializeEndpoint(adaptationConfigurationFile);
 
     try {
@@ -53,9 +57,15 @@ public class Server {
 
     // TODO(ap0n): Add a file configuration for server ports, etc.
     boolean isReplay = false;
-    if (args.length > 1) {
-      if (args[1].equals("replay")) {
+    String adaptationConfigurationFile = "/var/nfs/qm/qm.infrastructure.cfg";
+    if (args.length > 0) {
+      // Usage: java -jar <name>.jar [adaptationConfigurationPath] [replay]  two optional args
+      if (args[args.length - 1].equals("replay")) {
         isReplay = true;
+      }
+
+      if (!args[0].equals("replay")) {
+        adaptationConfigurationFile = args[0];
       }
     }
 
@@ -78,8 +88,7 @@ public class Server {
         consumerPort = Integer.parseInt(properties.getProperty("CONSUMER_PORT"));
       }
     } catch (IOException ioex) {
-      System.err.println(ioex.getMessage());
-      ioex.printStackTrace();
+      // Ignore exception, means file not found or something similar. Fall back to defaults.
     } finally {
       if (inputStream != null) {
         try {
@@ -90,10 +99,6 @@ public class Server {
         }
       }
     }
-
-    String adaptationConfigurationFile = args.length == 0
-                                         ? "/var/nfs/qm/qm.infrastructure.cfg"
-                                         : args[0];
 
     try {
       Server server = new Server(isReplay, producerPort, consumerPort, adaptationConfigurationFile);
@@ -158,7 +163,9 @@ public class Server {
             thread.start();
           } else {
             clientSocket = serverConsumerSocket.accept();
-            Thread thread = new Thread(new DataConsumerDataHandler(requestHandler, clientSocket, isReplay));
+            Thread
+                thread =
+                new Thread(new DataConsumerDataHandler(requestHandler, clientSocket, isReplay));
             thread.start();
           }
         } catch (SocketTimeoutException e) {
