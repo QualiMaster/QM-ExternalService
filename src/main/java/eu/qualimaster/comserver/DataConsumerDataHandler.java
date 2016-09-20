@@ -135,27 +135,27 @@ public class DataConsumerDataHandler implements IDataHandler {
           try {
             String reply;
             if (loggedIn) {
-              reply = "0,already logged in";
+              reply = "0,already logged in!";
             } else {
-              reply = login(received.substring(6, received.length()));
+              reply = login(received.substring(6, received.length()) + "!");
             }
             logger.info("Sending login response");
             printWriter.println("login_response," + reply);
             printWriter.flush();
           } catch (Exception e) {
-            String reply = "0,error: " + e.getMessage() + ". Please try again.";
+            String reply = "0,error: " + e.getMessage() + ". Please try again.!";
             printWriter.println("login_response," + reply);
             logger.error(e.getMessage(), e);
           }
         }
       } else if (!loggedIn) {  // Only login is allowed while not logged-in
         synchronized (printWriter) {
-          printWriter.println(received + "_response,0,not logged in");
+          printWriter.println(received + "_response,0,not logged in!");
           printWriter.flush();
         }
       } else if (received.startsWith("logout")) {
         synchronized (printWriter) {
-          String reply = logout();
+          String reply = logout() + "!";
           printWriter.println("logout_response," + reply);
           printWriter.flush();
         }
@@ -163,12 +163,12 @@ public class DataConsumerDataHandler implements IDataHandler {
         logger.info("Got quoteList");
         synchronized (printWriter) {
           try {
-            String reply = requestHandler.getQuoteList();
+            String reply = requestHandler.getQuoteList() + "!";
             logger.info("Sending symbols");
             printWriter.print("quoteList_response," + reply);
             printWriter.flush();
           } catch (Exception e) {
-            String reply = "error: " + e.getMessage() + ". Please try again.";
+            String reply = "error: " + e.getMessage() + ". Please try again.!";
             printWriter.println("quoteList_response," + reply);
             logger.error(e.getMessage(), e);
           }
@@ -180,7 +180,7 @@ public class DataConsumerDataHandler implements IDataHandler {
         // "resultsSubscribe,".length = 17
         addToFilter(received.substring(17));
         synchronized (printWriter) {
-          printWriter.println("resultsSubscribe_response,1");
+          printWriter.println("resultsSubscribe_response,1!");
         }
 
       } else if (received.startsWith("resultsUnsubscribe,")) {  // Stop sending results command
@@ -190,7 +190,7 @@ public class DataConsumerDataHandler implements IDataHandler {
         removeFromFilter(received.substring(19));
 
         synchronized (printWriter) {
-          printWriter.println("resultsUnsubscribe_response,1");
+          printWriter.println("resultsUnsubscribe_response,1!");
         }
 
       } else if (received.startsWith("requestHistoricalSentiment,")) {
@@ -198,7 +198,7 @@ public class DataConsumerDataHandler implements IDataHandler {
         try {
 
           synchronized (printWriter) {
-            printWriter.println("historicalSentiment_response,1");
+            printWriter.println("historicalSentiment_response,1!");
           }
 
           String[] reply = requestHistoricalSentiment(received.substring(27));
@@ -213,7 +213,7 @@ public class DataConsumerDataHandler implements IDataHandler {
           logger.error(e.getMessage(), e);
 
           synchronized (printWriter) {
-            printWriter.println("historicalSentiment_response,0, " + e.getMessage());
+            printWriter.println("historicalSentiment_response,0, " + e.getMessage() + "!");
           }
         }
       } else if (received.startsWith("addMarketplayer,")
@@ -245,7 +245,7 @@ public class DataConsumerDataHandler implements IDataHandler {
       } else {
         logger.error("Unknown command received: " + received);
         synchronized (printWriter) {
-          printWriter.println(received + "_response,0,Unknown command");
+          printWriter.println(received + "_response,0,Unknown command!");
         }
       }
     }
