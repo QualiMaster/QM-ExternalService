@@ -53,7 +53,7 @@ public class Server {
 
     // TODO(ap0n): Add a file configuration for server ports, etc.
     boolean isReplay = false;
-    if (args.length > 0) {
+    if (args.length > 1) {
       if (args[1].equals("replay")) {
         isReplay = true;
       }
