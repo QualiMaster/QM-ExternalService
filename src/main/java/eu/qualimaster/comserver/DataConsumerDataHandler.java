@@ -57,10 +57,13 @@ public class DataConsumerDataHandler implements IDataHandler {
   private TweetSentimentConnector tweetSentimentConnector;
   private Logger logger = LoggerFactory.getLogger(DataConsumerDataHandler.class);
   private DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+  private boolean isReplay;
 
-  public DataConsumerDataHandler(RequestHandler requestHandler, Socket socket) throws IOException {
+  public DataConsumerDataHandler(RequestHandler requestHandler, Socket socket, boolean isReplay)
+      throws IOException {
     this.requestHandler = requestHandler;
     this.socket = socket;
+    this.isReplay = isReplay;
 
     outputStream = socket.getOutputStream();
     printWriter = new PrintWriter(outputStream, true);

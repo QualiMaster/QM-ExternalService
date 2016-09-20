@@ -1,16 +1,17 @@
 package eu.qualimaster.comserver;
 
 import eu.qualimaster.adaptation.AdaptationConfiguration;
-import eu.qualimaster.dataManagement.DataManagementConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.Properties;
 
 /**
  * Created by ap0n on 1/14/15.
@@ -24,10 +25,12 @@ public class Server {
   RequestHandler requestHandler;
   ServerSocket serverProducerSocket;
   ServerSocket serverConsumerSocket;
+  boolean isReplay;
 
-  public Server(int producerPort, int consumerPort, String adaptationConfigurationFile)
+  public Server(boolean isReplay, int producerPort, int consumerPort,
+                String adaptationConfigurationFile)
       throws IOException {
-
+    this.isReplay = isReplay;
     this.producerPort = producerPort;
     this.consumerPort = consumerPort;
     soTimeout = 500;
@@ -49,20 +52,58 @@ public class Server {
   public static void main(String[] args) {
 
     // TODO(ap0n): Add a file configuration for server ports, etc.
+    boolean isReplay = false;
+    if (args.length > 0) {
+      if (args[1].equals("replay")) {
+        isReplay = true;
+      }
+    }
 
     int producerPort = 8888;
     int consumerPort = 8889;
+
+    String properties_path = "/var/nfs/qm/tsi/external-service.properties";
+
+    Properties properties = new Properties();
+    FileInputStream inputStream = null;
+    try {
+      inputStream = new FileInputStream(properties_path);
+      properties.load(inputStream);
+      if (isReplay) {
+        producerPort = Integer.parseInt(properties.getProperty("REPLAY_PORT"));
+        consumerPort = Integer.parseInt(properties.getProperty("REPLAY_CONSUMER_PORT"));
+      } else {
+        producerPort = Integer.parseInt(properties.getProperty("PORT"));
+        consumerPort = Integer.parseInt(properties.getProperty("CONSUMER_PORT"));
+      }
+    } catch (IOException ioex) {
+      System.err.println(ioex.getMessage());
+      ioex.printStackTrace();
+    } finally {
+      if (inputStream != null) {
+        try {
+          inputStream.close();
+        } catch (IOException ex) {
+          // Ignore exception, means file not found or something similar. Fall back to defaults.
+          //          ex.printStackTrace();
+        }
+      }
+    }
 
     String adaptationConfigurationFile = args.length == 0
                                          ? "/var/nfs/qm/qm.infrastructure.cfg"
                                          : args[0];
 
     try {
-      Server server = new Server(producerPort, consumerPort, adaptationConfigurationFile);
+      Server server = new Server(isReplay, producerPort, consumerPort, adaptationConfigurationFile);
       server.start();
     } catch (IOException e) {
       logger.error(e.getMessage(), e);
     }
+  }
+
+  private void readPropertiesFile() {
+
   }
 
 //  public static void main(String[] args) throws ParseException {
@@ -116,7 +157,7 @@ public class Server {
             thread.start();
           } else {
             clientSocket = serverConsumerSocket.accept();
-            Thread thread = new Thread(new DataConsumerDataHandler(requestHandler, clientSocket));
+            Thread thread = new Thread(new DataConsumerDataHandler(requestHandler, clientSocket, isReplay));
             thread.start();
           }
         } catch (SocketTimeoutException e) {
