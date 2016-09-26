@@ -137,7 +137,7 @@ public class DataConsumerDataHandler implements IDataHandler {
             if (loggedIn) {
               reply = "0,already logged in!";
             } else {
-              reply = login(received.substring(6, received.length()) + "!");
+              reply = login(received.substring(6, received.length())) + "!";
             }
             logger.info("Sending login response");
             printWriter.println("login_response," + reply);
