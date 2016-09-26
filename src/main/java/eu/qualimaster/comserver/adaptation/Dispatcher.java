@@ -86,6 +86,9 @@ public class Dispatcher extends DispatcherAdapter {
     synchronized (printWriter) {
 
       ChangeParameterRequest req = responseStore.receivedEvent(executionResponseMessage);
+      if (req == null) {
+        return;
+      }
       String param = req.getParameter();
       String value = req.getValue().toString();
       int res = executionResponseMessage.getResult() == SUCCESSFUL ? 1 : 0;

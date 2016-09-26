@@ -473,6 +473,16 @@ public class DataConsumerDataHandler implements IDataHandler {
       clientEndpoint.schedule(snapshotsRequest);
       responseStore.sent(snapshotsRequest);
     }
+
+    // "Reset" parameter to be able to sent the same query more than once
+    snapshotsRequest = new ChangeParameterRequest<>("TimeTravelPip",
+                                                    "queries",
+                                                    "snapshotQuery",
+                                                    "");
+    synchronized (clientEndpoint) {
+      clientEndpoint.schedule(snapshotsRequest);
+//      responseStore.sent(snapshotsRequest);
+    }
   }
 
   public String[] requestHistoricalSentiment(String request) throws ParseException {
