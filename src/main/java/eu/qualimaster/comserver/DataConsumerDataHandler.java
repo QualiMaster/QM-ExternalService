@@ -5,7 +5,6 @@ import eu.qualimaster.adaptation.AdaptationConfiguration;
 import eu.qualimaster.adaptation.external.ChangeParameterRequest;
 import eu.qualimaster.adaptation.external.ClientEndpoint;
 import eu.qualimaster.adaptation.external.ReplayMessage;
-import eu.qualimaster.adaptation.external.RequestMessage;
 import eu.qualimaster.adaptation.external.ResponseMessage;
 import eu.qualimaster.adaptation.external.UsualMessage;
 import eu.qualimaster.comserver.adaptation.Dispatcher;
@@ -49,7 +48,7 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   private boolean loggedIn;
   private String userName;
-  private String role;  // TODO(ap0n): Add an enum for roles
+  private String role;
 
   private ResponseStore<UsualMessage, ChangeParameterRequest, ResponseMessage> responseStore;
 //  private ResponseStore<UsualMessage, RequestMessage, ResponseMessage> responseStore;
@@ -62,7 +61,8 @@ public class DataConsumerDataHandler implements IDataHandler {
   private DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
   private boolean isReplay;
 
-  public DataConsumerDataHandler(final RequestHandler requestHandler, Socket socket, boolean isReplay)
+  public DataConsumerDataHandler(final RequestHandler requestHandler, Socket socket,
+                                 boolean isReplay)
       throws IOException {
     this.requestHandler = requestHandler;
     this.socket = socket;
@@ -245,9 +245,9 @@ public class DataConsumerDataHandler implements IDataHandler {
         logger.info("[consumer] got requestSnapshots. Cmd = " + received);
         requestSanpshots(received.substring(17));
 
-      } else if (received.startsWith("requestFinancialReplay")) {
+      } else if (received.startsWith("requestFinancialReplay,")) {
         logger.info("[consumer] got request financial replay");
-        requestFinancialReplay();
+        requestFinancialReplay(received.substring(23));
         // TODO: Add argument [start/stop, dates (from, to), query(players), speed]
 
       } else {
@@ -404,7 +404,6 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   private void changeFocusCorrelationThreshold(String threshold) {
 
-    // TODO(ap0n): Read the configuration from a file
     ChangeParameterRequest<Double> changeThresholdRequest =
         new ChangeParameterRequest<>("FocusPip", "DynamicGraphCompilation",
                                      "correlationThreshold", Double.parseDouble(threshold));
@@ -417,7 +416,6 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   private void changeDynamicGraphThreshold(String threshold) {
 
-    // TODO(ap0n): Read the configuration from a file
     ChangeParameterRequest<Double> changeThresholdRequest =
         new ChangeParameterRequest<>("DynamicGraphPip", "DynamicGraphCompilation",
                                      "correlationThreshold", Double.parseDouble(threshold));
@@ -430,7 +428,6 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   private void changeHubListStize(String hubListSize) {
 
-    // TODO(ap0n): Read the configuration from a file
     ChangeParameterRequest<Integer> changehubListSizeRequest =
         new ChangeParameterRequest<>("DynamicGraphPip", "DynamicHubComputation", "hubListSize",
                                      Integer.parseInt(hubListSize));
@@ -443,7 +440,6 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   public void changeWindowSize(String windowSize) {
 
-    // TODO(ap0n): Read the configuration from a file
 //    ChangeParameterRequest<Integer> changeWindowRequest =
 //        new ChangeParameterRequest<>("DynamicGraphPip", "DynamicHubComputation", "windowSize",
 //                                     Integer.valueOf(windowSize));
@@ -459,7 +455,6 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   public void editMarketPlayerList(String command) {
 
-    // TODO(ap0n): Read the configuration from a file
     logger.info("Sending: " + command);
     ChangeParameterRequest<String> financialRequest =
         new ChangeParameterRequest<>("FocusPip", "SpringDataSource", "playerList", command);
@@ -470,12 +465,43 @@ public class DataConsumerDataHandler implements IDataHandler {
     }
   }
 
-  public void requestFinancialReplay() {
+  public void requestFinancialReplay(String command) {
+
+    // command = start,ticket,MM/dd/yyyy,HH:mm:ss,MM/dd/yyyy,HH:mm:ss,speed,query
+    DateFormat df = new SimpleDateFormat("MM/dd/yyyy,HH:mm:ss");
+    String[] args = command.split(",");
+
+    boolean start = false;
+    int ticket = -1;
+    Date start_date = null;
+    Date end_date = null;
+    int speed = -1;
+
+    try {
+      start = args[0].equals("1");
+      ticket = Integer.parseInt(args[1]);
+      start_date = df.parse(args[2] + "," + args[3]);
+      end_date = df.parse(args[4] + "," + args[5]);
+      speed = Integer.parseInt(args[6]);
+    } catch (ParseException e) {
+      e.printStackTrace();
+    }
+
+    String query = "";
+
+    if (args.length > 7) {
+      for (int i = 7; i < args.length; i++) {
+        query += ",";
+        query += args[i];
+      }
+      query = query.substring(1);
+    }
+
     ReplayMessage msg = new ReplayMessage("ReplayTestPip",
-                                          "ReplaySink", true, 1);
-    Date d = new Date();
-    d.setTime(System.currentTimeMillis() + 10000);
-    msg.setReplayStartInfo(new Date(), d, 2, "1,2,3");
+                                          "ReplaySink", start, ticket);
+    msg.setReplayStartInfo(start_date, end_date, speed, query);
+
+    logger.info("start: " + start + " ticket: " + ticket + " start_date=" + start_date + " end_date: " + end_date + " speed: " + speed + " query: " + query);
 
     synchronized (clientEndpoint) {
       clientEndpoint.schedule(msg);
