@@ -4,6 +4,8 @@ import eu.qualimaster.ExternalHBaseConnector.TweetSentimentConnector;
 import eu.qualimaster.adaptation.AdaptationConfiguration;
 import eu.qualimaster.adaptation.external.ChangeParameterRequest;
 import eu.qualimaster.adaptation.external.ClientEndpoint;
+import eu.qualimaster.adaptation.external.ReplayMessage;
+import eu.qualimaster.adaptation.external.RequestMessage;
 import eu.qualimaster.adaptation.external.ResponseMessage;
 import eu.qualimaster.adaptation.external.UsualMessage;
 import eu.qualimaster.comserver.adaptation.Dispatcher;
@@ -50,6 +52,7 @@ public class DataConsumerDataHandler implements IDataHandler {
   private String role;  // TODO(ap0n): Add an enum for roles
 
   private ResponseStore<UsualMessage, ChangeParameterRequest, ResponseMessage> responseStore;
+//  private ResponseStore<UsualMessage, RequestMessage, ResponseMessage> responseStore;
 
   // *Warning* Lock clientEntpoint before using it!
   private ClientEndpoint clientEndpoint;  // For sending user commands to the infrastructure.
@@ -59,7 +62,7 @@ public class DataConsumerDataHandler implements IDataHandler {
   private DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
   private boolean isReplay;
 
-  public DataConsumerDataHandler(RequestHandler requestHandler, Socket socket, boolean isReplay)
+  public DataConsumerDataHandler(final RequestHandler requestHandler, Socket socket, boolean isReplay)
       throws IOException {
     this.requestHandler = requestHandler;
     this.socket = socket;
@@ -239,8 +242,13 @@ public class DataConsumerDataHandler implements IDataHandler {
         changeFocusCorrelationThreshold(received.substring(33));
 
       } else if (received.startsWith("requestSnapshots,")) {
-        logger.info("[consumer] get requestSnapshots. Cmd = " + received);
+        logger.info("[consumer] got requestSnapshots. Cmd = " + received);
         requestSanpshots(received.substring(17));
+
+      } else if (received.startsWith("requestFinancialReplay")) {
+        logger.info("[consumer] got request financial replay");
+        requestFinancialReplay();
+        // TODO: Add argument [start/stop, dates (from, to), query(players), speed]
 
       } else {
         logger.error("Unknown command received: " + received);
@@ -452,12 +460,26 @@ public class DataConsumerDataHandler implements IDataHandler {
   public void editMarketPlayerList(String command) {
 
     // TODO(ap0n): Read the configuration from a file
+    logger.info("Sending: " + command);
     ChangeParameterRequest<String> financialRequest =
         new ChangeParameterRequest<>("FocusPip", "SpringDataSource", "playerList", command);
 
     synchronized (clientEndpoint) {
       clientEndpoint.schedule(financialRequest);
       responseStore.sentEvent(financialRequest);
+    }
+  }
+
+  public void requestFinancialReplay() {
+    ReplayMessage msg = new ReplayMessage("ReplayTestPip",
+                                          "ReplaySink", true, 1);
+    Date d = new Date();
+    d.setTime(System.currentTimeMillis() + 10000);
+    msg.setReplayStartInfo(new Date(), d, 2, "1,2,3");
+
+    synchronized (clientEndpoint) {
+      clientEndpoint.schedule(msg);
+//      responseStore.sent(msg);
     }
   }
 

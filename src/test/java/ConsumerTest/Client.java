@@ -63,6 +63,10 @@ public class Client {
           } else if (line.startsWith("rp,")) {
             writer.println("removeMarketplayer" + line.substring(2) + "!");
             writer.flush();
+          } else if (line.equals("rfr")) {
+            // TODO: Add arguments
+            writer.println("requestFinancialReplay!");
+            writer.flush();
           } else if (line.equals("x")) {  // close socket
             System.out.println("gracefully ending connection");
             socket.getOutputStream().close();

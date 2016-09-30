@@ -51,6 +51,7 @@ public class DataProducerDataHandler implements IDataHandler {
         logger.error("Unknown message type received: " + received);
         break;
       }
+      logger.info("Received: " + received);
     }
     try {
       socket.getInputStream().close();
