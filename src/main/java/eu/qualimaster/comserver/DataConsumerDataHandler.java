@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.text.DateFormat;
@@ -26,23 +27,39 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+
+import static eu.qualimaster.comserver.Cmd.ADD_MARKET_PLAYER;
+import static eu.qualimaster.comserver.Cmd.CHANGE_CORRELATION_THRESHOLD;
+import static eu.qualimaster.comserver.Cmd.CHANGE_DENSITY_SIZE;
+import static eu.qualimaster.comserver.Cmd.CHANGE_HUBLIST_SIZE;
+import static eu.qualimaster.comserver.Cmd.CHANGE_WINDOW_ADVANCE;
+import static eu.qualimaster.comserver.Cmd.CHANGE_WINDOW_SIZE;
+import static eu.qualimaster.comserver.Cmd.LOGIN;
+import static eu.qualimaster.comserver.Cmd.LOGOUT;
+import static eu.qualimaster.comserver.Cmd.QUOTE_LIST;
+import static eu.qualimaster.comserver.Cmd.REMOVE_MARKET_PLAYER;
+import static eu.qualimaster.comserver.Cmd.REQUEST_FINANCIAL_REPLAY;
+import static eu.qualimaster.comserver.Cmd.REQUEST_HISTORICAL_SENTIMENT;
+import static eu.qualimaster.comserver.Cmd.REQUEST_SNAPSHOTS;
+import static eu.qualimaster.comserver.Cmd.RESULT_SUBSCRIBE;
+import static eu.qualimaster.comserver.Cmd.RESULT_UNSUBSCRIBE;
 
 /**
  * Created by ap0n on 1/14/15.
  */
 public class DataConsumerDataHandler implements IDataHandler {
 
+  private final Object printWriterLock;
   private RequestHandler requestHandler;
   private Socket socket;
   private OutputStream outputStream;
-
   private BufferedInputStream bufferedInputStream;
   private InputStreamReader inputStreamReader;
-
   private PrintWriter printWriter;
-
   private Map<String, Integer> filter;
   private boolean useFilter;
 
@@ -60,10 +77,14 @@ public class DataConsumerDataHandler implements IDataHandler {
   private Logger logger = LoggerFactory.getLogger(DataConsumerDataHandler.class);
   private DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
   private boolean isReplay;
+  private Map<String, Set<String>> commandPipelineMap;
+  private Map<String, String> identifierPipelineMap;
+  private Map<String, String> commandPipelineToComponentMap;  // cmd,pipeline -> compName
 
   public DataConsumerDataHandler(final RequestHandler requestHandler, Socket socket,
                                  boolean isReplay)
       throws IOException {
+    printWriterLock = new Object();
     this.requestHandler = requestHandler;
     this.socket = socket;
     this.isReplay = isReplay;
@@ -112,7 +133,20 @@ public class DataConsumerDataHandler implements IDataHandler {
                            InetAddress.getByName(AdaptationConfiguration.getAdaptationHost()),
                            AdaptationConfiguration.getAdaptationPort());
 
+    initializeMappings();
+
 //    tweetSentimentConnector = new TweetSentimentConnector();
+  }
+
+  String[] checkCommand(String cmd) {
+    String[] args = cmd.split(",", 3);
+    if (commandPipelineMap.get(args[0]).contains(args[1])) {
+      return args;
+    }
+    synchronized (printWriterLock) {
+      printWriter.println(args[0] + "_response,0,wrong_pipeline!");
+    }
+    return null;
   }
 
   public void run() {
@@ -132,9 +166,9 @@ public class DataConsumerDataHandler implements IDataHandler {
       if (received == null) {
         break;  // socket has been closed
       }
-
-      if (received.startsWith("login,")) { // Login command
-        synchronized (printWriter) {
+      // -- Server Commands
+      if (received.startsWith(LOGIN + ",")) { // Login command
+        synchronized (printWriterLock) {
           try {
             String reply;
             if (loggedIn) {
@@ -152,19 +186,19 @@ public class DataConsumerDataHandler implements IDataHandler {
           }
         }
       } else if (!loggedIn) {  // Only login is allowed while not logged-in
-        synchronized (printWriter) {
+        synchronized (printWriterLock) {
           printWriter.println(received + "_response,0,not logged in!");
           printWriter.flush();
         }
-      } else if (received.startsWith("logout")) {
-        synchronized (printWriter) {
+      } else if (received.startsWith(LOGOUT)) {
+        synchronized (printWriterLock) {
           String reply = logout() + "!";
           printWriter.println("logout_response," + reply);
           printWriter.flush();
         }
-      } else if (received.equals("quoteList")) {  // Send Symbols List command
+      } else if (received.equals(QUOTE_LIST)) {  // Send Symbols List command
         logger.info("Got quoteList");
-        synchronized (printWriter) {
+        synchronized (printWriterLock) {
           try {
             String reply = requestHandler.getQuoteList() + "!";
             logger.info("Sending symbols");
@@ -176,37 +210,17 @@ public class DataConsumerDataHandler implements IDataHandler {
             logger.error(e.getMessage(), e);
           }
         }
-      } else if (received.startsWith("resultsSubscribe,")) {  // Start sending results command
-
-        logger.info("[consumer] got resultsSubscribe");
-
-        // "resultsSubscribe,".length = 17
-        addToFilter(received.substring(17));
-        synchronized (printWriter) {
-          printWriter.println("resultsSubscribe_response,1!");
-        }
-
-      } else if (received.startsWith("resultsUnsubscribe,")) {  // Stop sending results command
-        logger.info("[consumer] got resultsUnsubscribe");
-
-        // "resultsUnsubscribe,".length = 19
-        removeFromFilter(received.substring(19));
-
-        synchronized (printWriter) {
-          printWriter.println("resultsUnsubscribe_response,1!");
-        }
-
-      } else if (received.startsWith("requestHistoricalSentiment,")) {
+      } else if (received.startsWith(REQUEST_HISTORICAL_SENTIMENT + ",")) {
         logger.info("[consumer] got resultsHistoricalSentiment. Cmd = " + received);
         try {
 
-          synchronized (printWriter) {
+          synchronized (printWriterLock) {
             printWriter.println("historicalSentiment_response,1!");
           }
 
           String[] reply = requestHistoricalSentiment(received.substring(27));
 
-          synchronized (printWriter) {
+          synchronized (printWriterLock) {
             for (String s : reply) {
               printWriter.println(s);
             }
@@ -215,44 +229,92 @@ public class DataConsumerDataHandler implements IDataHandler {
         } catch (ParseException e) {
           logger.error(e.getMessage(), e);
 
-          synchronized (printWriter) {
+          synchronized (printWriterLock) {
             printWriter.println("historicalSentiment_response,0, " + e.getMessage() + "!");
           }
         }
-      } else if (received.startsWith("addMarketplayer,")
-                 || received.startsWith("removeMarketplayer,")) {
-
+        // --
+      } else if (received.startsWith(RESULT_SUBSCRIBE + ",")) {  // Start sending results command
+        // Pipelines: priority
+        logger.info("[consumer] got resultsSubscribe");
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          addToFilter(cmd_args[2]);
+          synchronized (printWriterLock) {
+            printWriter.println("resultsSubscribe_response,1!");
+          }
+        }
+      } else if (received.startsWith(RESULT_UNSUBSCRIBE + ",")) {  // Stop sending results command
+        // Pipelines: priority
+        logger.info("[consumer] got resultsUnsubscribe");
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          removeFromFilter(cmd_args[2]);
+          synchronized (printWriterLock) {
+            printWriter.println("resultsUnsubscribe_response,1!");
+          }
+        }
+      } else if (received.startsWith(ADD_MARKET_PLAYER + ",")
+                 || received.startsWith(REMOVE_MARKET_PLAYER + ",")) {
+        // Pipelines: focus, transfer entropy
         logger.info("Got " + received);
-        received = received.replaceFirst(",", "/");  // TODO: workaround for now.
-        editMarketPlayerList(received.substring(0, received.length()));  // Strip the '!'
-      } else if (received.startsWith("changewindowSize,")) {
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          changeParameter(cmd_args[0], cmd_args[1], cmd_args[0] + "/" + cmd_args[2]);
+        }
+      } else if (received.startsWith(CHANGE_WINDOW_SIZE + ",")) {
+        // Pipelines: all
         logger.info("[consumer] got changewindowSize. Cmd = " + received);
-        changeWindowSize(received.substring(17));
-
-      } else if (received.startsWith("changehubListSize,")) {
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          changeParameter(cmd_args[0], cmd_args[1], Integer.parseInt(cmd_args[2]));
+        }
+      } else if (received.startsWith(CHANGE_HUBLIST_SIZE + ",")) {
+        // Pipelines: dynamic graph
         logger.info("[consumer] got changehubListSize. Cmd = " + received);
-        changeHubListStize(received.substring(18));
-
-      } else if (received.startsWith("changeDynamicCorrelationThreshold,")) {
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          changeParameter(cmd_args[0], cmd_args[1], Integer.parseInt(cmd_args[2]));
+        }
+      } else if (received.startsWith(CHANGE_CORRELATION_THRESHOLD + ",")) {
+        // Pipelines: focus & dynamic graph & time travel
         logger.info("[consumer] got changeDynamicCorrelationThreshold. Cmd = " + received);
-        changeDynamicGraphThreshold(received.substring(34));
-
-      } else if (received.startsWith("changeFocusCorrelationThreshold,")) {
-        logger.info("[consumer] got changeFocusCorrelationThreshold. Cmd = " + received);
-        changeFocusCorrelationThreshold(received.substring(33));
-
-      } else if (received.startsWith("requestSnapshots,")) {
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          changeParameter(cmd_args[0], cmd_args[1], Double.parseDouble(cmd_args[2]));
+        }
+      } else if (received.startsWith(REQUEST_SNAPSHOTS + ",")) {
+        // Pipelines: time travel
         logger.info("[consumer] got requestSnapshots. Cmd = " + received);
-        requestSanpshots(received.substring(17));
-
-      } else if (received.startsWith("requestFinancialReplay,")) {
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          changeParameter(cmd_args[0], cmd_args[1], cmd_args[2]);
+          changeParameter(cmd_args[0], cmd_args[1], "");
+        }
+      } else if (received.startsWith(REQUEST_FINANCIAL_REPLAY + ",")) {
+        // Pipelines: transfer entropy
         logger.info("[consumer] got request financial replay");
-        requestFinancialReplay(received.substring(23));
-        // TODO: Add argument [start/stop, dates (from, to), query(players), speed]
-
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          requestFinancialReplay(cmd_args[0], cmd_args[1], cmd_args[2]);
+        }
+      } else if (received.startsWith(CHANGE_WINDOW_ADVANCE + ",")) {
+        // Pipelines: transfer entropy
+        logger.info("[consumer] got changeWindowAdvance. Cmd = " + received);
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          changeParameter(cmd_args[0], cmd_args[1], Integer.parseInt(cmd_args[2]));
+        }
+      } else if (received.startsWith(CHANGE_DENSITY_SIZE + ",")) {
+        // Pipelines: transfer entropy
+        logger.info("[consumer] got changeDensitySize. Cmd = " + received);
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          changeParameter(cmd_args[0], cmd_args[1], Integer.parseInt(cmd_args[2]));
+        }
       } else {
         logger.error("Unknown command received: " + received);
-        synchronized (printWriter) {
+        synchronized (printWriterLock) {
           printWriter.println(received + "_response,0,Unknown command!");
         }
       }
@@ -299,7 +361,7 @@ public class DataConsumerDataHandler implements IDataHandler {
   }
 
   public void consumeResult(String hubList) {
-    synchronized (printWriter) {
+    synchronized (printWriterLock) {
       printWriter.println(hubList + "!");
       printWriter.flush();
     }
@@ -311,7 +373,7 @@ public class DataConsumerDataHandler implements IDataHandler {
       return;
     }
 
-    synchronized (printWriter) {
+    synchronized (printWriterLock) {
       printWriter.println("resultsSubscribe_response," + result + "!");
       printWriter.flush();
     }
@@ -402,74 +464,26 @@ public class DataConsumerDataHandler implements IDataHandler {
     }
   }
 
-  private void changeFocusCorrelationThreshold(String threshold) {
+  public <T extends Serializable> void changeParameter(String cmd, String pipeline, T args) {
+    logger.info("Sending: " + cmd + ". Value = " + args);
+    String[] dest = commandPipelineToComponentMap.get(cmd + "," + pipeline).split(",");
+    ChangeParameterRequest<T> request =
+        new ChangeParameterRequest<>(identifierPipelineMap.get(pipeline), dest[0], dest[1], args);
 
-    ChangeParameterRequest<Double> changeThresholdRequest =
-        new ChangeParameterRequest<>("FocusPip", "DynamicGraphCompilation",
-                                     "correlationThreshold", Double.parseDouble(threshold));
+    logger.info("cmd: " + cmd + " pipeline: " + identifierPipelineMap.get(pipeline) + " component: "
+                + dest[0] + " param: " + dest[1] + " value:" + args);
 
     synchronized (clientEndpoint) {
-      clientEndpoint.schedule(changeThresholdRequest);
-      responseStore.sentEvent(changeThresholdRequest);
+      clientEndpoint.schedule(request);
+      responseStore.sentEvent(request);
     }
   }
 
-  private void changeDynamicGraphThreshold(String threshold) {
+  public void requestFinancialReplay(String cmd, String pipeline, String args) {
 
-    ChangeParameterRequest<Double> changeThresholdRequest =
-        new ChangeParameterRequest<>("DynamicGraphPip", "DynamicGraphCompilation",
-                                     "correlationThreshold", Double.parseDouble(threshold));
-
-    synchronized (clientEndpoint) {
-      clientEndpoint.schedule(changeThresholdRequest);
-      responseStore.sentEvent(changeThresholdRequest);
-    }
-  }
-
-  private void changeHubListStize(String hubListSize) {
-
-    ChangeParameterRequest<Integer> changehubListSizeRequest =
-        new ChangeParameterRequest<>("DynamicGraphPip", "DynamicHubComputation", "hubListSize",
-                                     Integer.parseInt(hubListSize));
-
-    synchronized (clientEndpoint) {
-      clientEndpoint.schedule(changehubListSizeRequest);
-      responseStore.sentEvent(changehubListSizeRequest);
-    }
-  }
-
-  public void changeWindowSize(String windowSize) {
-
-//    ChangeParameterRequest<Integer> changeWindowRequest =
-//        new ChangeParameterRequest<>("DynamicGraphPip", "DynamicHubComputation", "windowSize",
-//                                     Integer.valueOf(windowSize));
-    ChangeParameterRequest<Integer> changeWindowRequest =
-        new ChangeParameterRequest<>("PriorityPip", "FinancialCorrelation", "windowSize",
-                                     Integer.valueOf(windowSize));
-
-    synchronized (clientEndpoint) {
-      clientEndpoint.schedule(changeWindowRequest);
-      responseStore.sentEvent(changeWindowRequest);
-    }
-  }
-
-  public void editMarketPlayerList(String command) {
-
-    logger.info("Sending: " + command);
-    ChangeParameterRequest<String> financialRequest =
-        new ChangeParameterRequest<>("FocusPip", "SpringDataSource", "playerList", command);
-
-    synchronized (clientEndpoint) {
-      clientEndpoint.schedule(financialRequest);
-      responseStore.sentEvent(financialRequest);
-    }
-  }
-
-  public void requestFinancialReplay(String command) {
-
-    // command = start,ticket,MM/dd/yyyy,HH:mm:ss,MM/dd/yyyy,HH:mm:ss,speed,query
+    // cmd = start,ticket,MM/dd/yyyy,HH:mm:ss,MM/dd/yyyy,HH:mm:ss,speed,query
     DateFormat df = new SimpleDateFormat("MM/dd/yyyy,HH:mm:ss");
-    String[] args = command.split(",");
+    String[] argElements = args.split(",");
 
     boolean start = false;
     int ticket = -1;
@@ -478,58 +492,37 @@ public class DataConsumerDataHandler implements IDataHandler {
     int speed = -1;
 
     try {
-      start = args[0].equals("1");
-      ticket = Integer.parseInt(args[1]);
-      start_date = df.parse(args[2] + "," + args[3]);
-      end_date = df.parse(args[4] + "," + args[5]);
-      speed = Integer.parseInt(args[6]);
+      start = argElements[0].equals("1");
+      ticket = Integer.parseInt(argElements[1]);
+      start_date = df.parse(argElements[2] + "," + argElements[3]);
+      end_date = df.parse(argElements[4] + "," + argElements[5]);
+      speed = Integer.parseInt(argElements[6]);
     } catch (ParseException e) {
       e.printStackTrace();
     }
 
     String query = "";
 
-    if (args.length > 7) {
-      for (int i = 7; i < args.length; i++) {
+    if (argElements.length > 7) {
+      for (int i = 7; i < argElements.length; i++) {
         query += ",";
-        query += args[i];
+        query += argElements[i];
       }
       query = query.substring(1);
     }
 
-    ReplayMessage msg = new ReplayMessage("ReplayTestPip",
-                                          "ReplaySink", start, ticket);
+    ReplayMessage msg = new ReplayMessage(identifierPipelineMap.get(pipeline),
+                                          commandPipelineToComponentMap.get(cmd + "," + pipeline),
+                                          start,
+                                          ticket);
     msg.setReplayStartInfo(start_date, end_date, speed, query);
 
-    logger.info("start: " + start + " ticket: " + ticket + " start_date=" + start_date + " end_date: " + end_date + " speed: " + speed + " query: " + query);
+    logger.info("start: " + start + " ticket: " + ticket + " start_date=" + start_date
+                + " end_date: " + end_date + " speed: " + speed + " query: " + query);
 
     synchronized (clientEndpoint) {
       clientEndpoint.schedule(msg);
 //      responseStore.sent(msg);
-    }
-  }
-
-  private void requestSanpshots(String request) {
-    // request format: MM/dd/YYYY,HH:mm:ss,MM/dd/YYYY,HH:mm:ss
-
-    //setParameterSnapshotQuery
-    ChangeParameterRequest<String> snapshotsRequest = new ChangeParameterRequest<>("TimeTravelPip",
-                                                                                   "queries",
-                                                                                   "snapshotQuery",
-                                                                                   request);
-    synchronized (clientEndpoint) {
-      clientEndpoint.schedule(snapshotsRequest);
-      responseStore.sent(snapshotsRequest);
-    }
-
-    // "Reset" parameter to be able to sent the same query more than once
-    snapshotsRequest = new ChangeParameterRequest<>("TimeTravelPip",
-                                                    "queries",
-                                                    "snapshotQuery",
-                                                    "");
-    synchronized (clientEndpoint) {
-      clientEndpoint.schedule(snapshotsRequest);
-//      responseStore.sent(snapshotsRequest);
     }
   }
 
@@ -563,5 +556,90 @@ public class DataConsumerDataHandler implements IDataHandler {
       }
     }
     return result;
+  }
+
+  private void initializeMappings() {
+    commandPipelineMap = new HashMap<>();
+    commandPipelineMap.put(RESULT_SUBSCRIBE, new HashSet<String>());
+    commandPipelineMap.get(RESULT_SUBSCRIBE).add("p");
+
+    commandPipelineMap.put(RESULT_UNSUBSCRIBE, new HashSet<String>());
+    commandPipelineMap.get(RESULT_UNSUBSCRIBE).add("p");
+
+    commandPipelineMap.put(ADD_MARKET_PLAYER, new HashSet<String>());
+    commandPipelineMap.get(ADD_MARKET_PLAYER).add("f");
+    commandPipelineMap.get(ADD_MARKET_PLAYER).add("te");
+
+    commandPipelineMap.put(REMOVE_MARKET_PLAYER, new HashSet<String>());
+    commandPipelineMap.get(REMOVE_MARKET_PLAYER).add("f");
+    commandPipelineMap.get(REMOVE_MARKET_PLAYER).add("te");
+
+    commandPipelineMap.put(CHANGE_WINDOW_SIZE, new HashSet<String>());
+    commandPipelineMap.get(CHANGE_WINDOW_SIZE).add("tt");
+    commandPipelineMap.get(CHANGE_WINDOW_SIZE).add("te");
+    commandPipelineMap.get(CHANGE_WINDOW_SIZE).add("f");
+    commandPipelineMap.get(CHANGE_WINDOW_SIZE).add("d");
+    commandPipelineMap.get(CHANGE_WINDOW_SIZE).add("p");
+
+    commandPipelineMap.put(CHANGE_HUBLIST_SIZE, new HashSet<String>());
+    commandPipelineMap.get(CHANGE_HUBLIST_SIZE).add("d");
+
+    commandPipelineMap.put(CHANGE_CORRELATION_THRESHOLD, new HashSet<String>());
+    commandPipelineMap.get(CHANGE_CORRELATION_THRESHOLD).add("f");
+    commandPipelineMap.get(CHANGE_CORRELATION_THRESHOLD).add("d");
+    commandPipelineMap.get(CHANGE_CORRELATION_THRESHOLD).add("tt");
+
+    commandPipelineMap.put(REQUEST_SNAPSHOTS, new HashSet<String>());
+    commandPipelineMap.get(REQUEST_SNAPSHOTS).add("tt");
+
+    commandPipelineMap.put(REQUEST_FINANCIAL_REPLAY, new HashSet<String>());
+    commandPipelineMap.get(REQUEST_FINANCIAL_REPLAY).add("te");
+
+    commandPipelineMap.put(CHANGE_WINDOW_ADVANCE, new HashSet<String>());
+    commandPipelineMap.get(CHANGE_WINDOW_ADVANCE).add("te");
+
+    commandPipelineMap.put(CHANGE_DENSITY_SIZE, new HashSet<String>());
+    commandPipelineMap.get(CHANGE_DENSITY_SIZE).add("te");
+
+    identifierPipelineMap = new HashMap<>();
+    identifierPipelineMap.put("p", "PriorityPip");
+    identifierPipelineMap.put("d", "DynamicGraphPip");
+    identifierPipelineMap.put("f", "FocusPip");
+    identifierPipelineMap.put("te", "TransferPip");
+    identifierPipelineMap.put("tt", "TimeTravelPip");
+
+    commandPipelineToComponentMap = new HashMap<>();
+    commandPipelineToComponentMap.put(ADD_MARKET_PLAYER + ",f", "SpringDataSource,playerList");
+    commandPipelineToComponentMap.put(ADD_MARKET_PLAYER + ",te", "SpringDataSource,playerList");
+
+    commandPipelineToComponentMap.put(REMOVE_MARKET_PLAYER + ",f", "SpringDataSource,playerList");
+    commandPipelineToComponentMap.put(REMOVE_MARKET_PLAYER + ",te", "SpringDataSource,playerList");
+
+    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",tt", "FinancialCorrelation,widowSize");
+    commandPipelineToComponentMap
+        .put(CHANGE_WINDOW_SIZE + ",te", "TransferEntropyCalculation,widowSize");
+    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",f", "correlation,widowSize");
+    commandPipelineToComponentMap
+        .put(CHANGE_WINDOW_SIZE + ",d", "CorrelationComputation,widowSize");
+    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",p", "FinancialCorrelation,widowSize");
+
+    commandPipelineToComponentMap
+        .put(CHANGE_HUBLIST_SIZE + ",d", "DynamicHubComputation,hubListSize");
+
+    commandPipelineToComponentMap
+        .put(CHANGE_CORRELATION_THRESHOLD + ",f", "DynamicGraphCompilation,correlationThreshold");
+    commandPipelineToComponentMap
+        .put(CHANGE_CORRELATION_THRESHOLD + ",d", "DynamicGraphCompilation,correlationThreshold");
+    commandPipelineToComponentMap
+        .put(CHANGE_CORRELATION_THRESHOLD + ",tt", "DynamicGraphCompilation,correlationThreshold");
+
+    commandPipelineToComponentMap.put(REQUEST_SNAPSHOTS + ",tt", "queries,snapshotQuery");
+
+    commandPipelineToComponentMap.put(REQUEST_FINANCIAL_REPLAY + ",te", "ReplaySink");
+
+    commandPipelineToComponentMap
+        .put(CHANGE_WINDOW_ADVANCE + ",te", "TransferEntropyCalculation,windowAdvance");
+    commandPipelineToComponentMap
+        .put(CHANGE_DENSITY_SIZE + ",te", "TransferEntropyCalculation,densitySize");
   }
 }

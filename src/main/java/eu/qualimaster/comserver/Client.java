@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import static eu.qualimaster.comserver.Cmd.*;
+
 /**
  * Created by ap0n on 1/15/15.
  */
@@ -47,11 +49,11 @@ public class Client {
           String line = in.readLine();
           if (line.startsWith("s,")) {
             readingResults = true;
-            String command = "resultsSubscribe" + line.substring(1) + "!";
+            String command = RESULT_SUBSCRIBE + line.substring(1) + "!";
             writer.println(command);
             writer.flush();
           } else if (line.startsWith("st,")) {
-            String command = "resultsUnsubscribe" + line.substring(2) + "!";
+            String command = RESULT_UNSUBSCRIBE + line.substring(2) + "!";
             writer.println(command);
             writer.flush();
           } else if (line.equals("l")) {
@@ -139,7 +141,6 @@ public class Client {
 
   public static void main(String[] args) throws IOException, InterruptedException {
     Client c = new Client();
-
     c.stressTest();
   }
 }

@@ -55,7 +55,6 @@ public class Server {
 
   public static void main(String[] args) {
 
-    // TODO(ap0n): Add a file configuration for server ports, etc.
     boolean isReplay = false;
     String adaptationConfigurationFile = "/var/nfs/qm/qm.infrastructure.cfg";
     if (args.length > 0) {
