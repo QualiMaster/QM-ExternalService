@@ -114,7 +114,7 @@
                     <!-- MainClass in mainfest make a executable jar -->
                     <archive>
                         <manifest>
-                            <mainClass>eu.qualimaster.comserver.Client</mainClass>
+                            <mainClass>eu.qualimaster.comserver.Server</mainClass>
                         </manifest>
                     </archive>
 
