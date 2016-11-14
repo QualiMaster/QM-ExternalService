@@ -48,23 +48,7 @@ public class RequestHandler {
     }
   }
 
-  public void publishHubList(String hubList) {
-    synchronized (dataConsumers) {
-      for (DataConsumerDataHandler s : dataConsumers) {
-        s.consumeResult(hubList);
-      }
-    }
-  }
-
-  public void publishFocusResult(String result) {
-    synchronized (dataConsumers) {
-      for (DataConsumerDataHandler s : dataConsumers) {
-        s.consumeResult(result);
-      }
-    }
-  }
-
-  public void publishSnapshotsResult(String result) {
+  public void publishUnfilteredResult(String result) {
     synchronized (dataConsumers) {
       for (DataConsumerDataHandler s : dataConsumers) {
         s.consumeResult(result);

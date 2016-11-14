@@ -39,19 +39,22 @@ public class DataProducerDataHandler implements IDataHandler {
       }
       if (received == null) {
         break;
-      } else if (received.startsWith("f,") || (received.startsWith("w,"))) {  // result
+      }
+      if (received.startsWith("f,") || (received.startsWith("w,"))) {  // result
         requestHandler.publishCorrelationResult(received);
+//        requestHandler.publishFocusResult(received);
       } else if (received.startsWith("hubList,")) {
-        requestHandler.publishHubList(received);
+        requestHandler.publishUnfilteredResult(received);
       } else if (received.startsWith("focusPip,")) {
-        requestHandler.publishFocusResult(received.substring(9));
+        requestHandler.publishUnfilteredResult(received.substring(9));
       } else if (received.startsWith("snapshots,")) {
-        requestHandler.publishSnapshotsResult(received.substring(10));
+        requestHandler.publishUnfilteredResult(received.substring(10));
+      } else if (received.startsWith("te,")) {
+        requestHandler.publishUnfilteredResult(received.substring(3));
       } else {  // Unknown
         logger.error("Unknown message type received: " + received);
         break;
       }
-      logger.info("Received: " + received);
     }
     try {
       socket.getInputStream().close();

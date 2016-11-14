@@ -44,6 +44,7 @@ import static eu.qualimaster.comserver.Cmd.QUOTE_LIST;
 import static eu.qualimaster.comserver.Cmd.REMOVE_MARKET_PLAYER;
 import static eu.qualimaster.comserver.Cmd.REQUEST_FINANCIAL_REPLAY;
 import static eu.qualimaster.comserver.Cmd.REQUEST_HISTORICAL_SENTIMENT;
+import static eu.qualimaster.comserver.Cmd.REQUEST_PATH;
 import static eu.qualimaster.comserver.Cmd.REQUEST_SNAPSHOTS;
 import static eu.qualimaster.comserver.Cmd.RESULT_SUBSCRIBE;
 import static eu.qualimaster.comserver.Cmd.RESULT_UNSUBSCRIBE;
@@ -291,6 +292,14 @@ public class DataConsumerDataHandler implements IDataHandler {
           changeParameter(cmd_args[0], cmd_args[1], cmd_args[2]);
           changeParameter(cmd_args[0], cmd_args[1], "");
         }
+      } else if (received.startsWith(REQUEST_PATH + ",")) {
+        // Pipelines: time travel
+        logger.info("[consumer] got requestPath. Cmd = " + received);
+        String[] cmd_args = checkCommand(received);
+        if (cmd_args != null) {
+          changeParameter(cmd_args[0], cmd_args[1], cmd_args[2]);
+          changeParameter(cmd_args[0], cmd_args[1], "");
+        }
       } else if (received.startsWith(REQUEST_FINANCIAL_REPLAY + ",")) {
         // Pipelines: transfer entropy
         logger.info("[consumer] got request financial replay");
@@ -490,15 +499,17 @@ public class DataConsumerDataHandler implements IDataHandler {
     Date start_date = null;
     Date end_date = null;
     int speed = -1;
-
     try {
       start = argElements[0].equals("1");
       ticket = Integer.parseInt(argElements[1]);
-      start_date = df.parse(argElements[2] + "," + argElements[3]);
-      end_date = df.parse(argElements[4] + "," + argElements[5]);
-      speed = Integer.parseInt(argElements[6]);
+      if (start) {
+        start_date = df.parse(argElements[2] + "," + argElements[3]);
+        end_date = df.parse(argElements[4] + "," + argElements[5]);
+        speed = Integer.parseInt(argElements[6]);
+      }
     } catch (ParseException e) {
       e.printStackTrace();
+      return;
     }
 
     String query = "";
@@ -515,7 +526,9 @@ public class DataConsumerDataHandler implements IDataHandler {
                                           commandPipelineToComponentMap.get(cmd + "," + pipeline),
                                           start,
                                           ticket);
-    msg.setReplayStartInfo(start_date, end_date, speed, query);
+    if (start) {
+      msg.setReplayStartInfo(start_date, end_date, speed, query);
+    }
 
     logger.info("start: " + start + " ticket: " + ticket + " start_date=" + start_date
                 + " end_date: " + end_date + " speed: " + speed + " query: " + query);
@@ -592,6 +605,9 @@ public class DataConsumerDataHandler implements IDataHandler {
     commandPipelineMap.put(REQUEST_SNAPSHOTS, new HashSet<String>());
     commandPipelineMap.get(REQUEST_SNAPSHOTS).add("tt");
 
+    commandPipelineMap.put(REQUEST_PATH, new HashSet<String>());
+    commandPipelineMap.get(REQUEST_PATH).add("tt");
+
     commandPipelineMap.put(REQUEST_FINANCIAL_REPLAY, new HashSet<String>());
     commandPipelineMap.get(REQUEST_FINANCIAL_REPLAY).add("te");
 
@@ -615,13 +631,13 @@ public class DataConsumerDataHandler implements IDataHandler {
     commandPipelineToComponentMap.put(REMOVE_MARKET_PLAYER + ",f", "SpringDataSource,playerList");
     commandPipelineToComponentMap.put(REMOVE_MARKET_PLAYER + ",te", "SpringDataSource,playerList");
 
-    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",tt", "FinancialCorrelation,widowSize");
+    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",tt", "FinancialCorrelation,windowSize");
     commandPipelineToComponentMap
-        .put(CHANGE_WINDOW_SIZE + ",te", "TransferEntropyCalculation,widowSize");
-    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",f", "correlation,widowSize");
+        .put(CHANGE_WINDOW_SIZE + ",te", "TransferEntropyCalculation,windowSize");
+    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",f", "correlation,windowSize");
     commandPipelineToComponentMap
-        .put(CHANGE_WINDOW_SIZE + ",d", "CorrelationComputation,widowSize");
-    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",p", "FinancialCorrelation,widowSize");
+        .put(CHANGE_WINDOW_SIZE + ",d", "CorrelationComputation,windowSize");
+    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",p", "FinancialCorrelation,windowSize");
 
     commandPipelineToComponentMap
         .put(CHANGE_HUBLIST_SIZE + ",d", "DynamicHubComputation,hubListSize");
@@ -634,6 +650,8 @@ public class DataConsumerDataHandler implements IDataHandler {
         .put(CHANGE_CORRELATION_THRESHOLD + ",tt", "DynamicGraphCompilation,correlationThreshold");
 
     commandPipelineToComponentMap.put(REQUEST_SNAPSHOTS + ",tt", "queries,snapshotQuery");
+
+    commandPipelineToComponentMap.put(REQUEST_PATH + ",tt", "queries,snapshotQuery");
 
     commandPipelineToComponentMap.put(REQUEST_FINANCIAL_REPLAY + ",te", "ReplaySink");
 
