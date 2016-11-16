@@ -498,14 +498,14 @@ public class DataConsumerDataHandler implements IDataHandler {
     int ticket = -1;
     Date start_date = null;
     Date end_date = null;
-    int speed = -1;
+    float speed = -1f;
     try {
       start = argElements[0].equals("1");
       ticket = Integer.parseInt(argElements[1]);
       if (start) {
         start_date = df.parse(argElements[2] + "," + argElements[3]);
         end_date = df.parse(argElements[4] + "," + argElements[5]);
-        speed = Integer.parseInt(argElements[6]);
+        speed = Float.parseFloat(argElements[6]);
       }
     } catch (ParseException e) {
       e.printStackTrace();
