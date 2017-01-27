@@ -2,6 +2,7 @@ package eu.qualimaster.comserver;
 
 import eu.qualimaster.adaptation.AdaptationConfiguration;
 
+import eu.qualimaster.dataManagement.DataManagementConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,7 @@ import java.util.Properties;
 public class Server {
 
   final static Logger logger = LoggerFactory.getLogger(Server.class);
+  private static final String DEFAULT_PROPERTIES_PATH = "/var/nfs/qm/tsi";
   int producerPort;
   int consumerPort;
   int soTimeout;
@@ -72,7 +74,14 @@ public class Server {
     int producerPort = isReplay ? 7788 : 8888;
     int consumerPort = isReplay ? 7789 : 8889;
 
-    String properties_path = "/var/nfs/qm/tsi/external-service.properties";
+    String properties_path = DataManagementConfiguration.getExternalServicePath();
+    if (properties_path.equals("")) {
+      properties_path = DEFAULT_PROPERTIES_PATH;
+      logger.warn("externalService.path is empty. Using default: " + properties_path);
+    } else {
+      logger.info("Configured externalService.path: " + properties_path);
+    }
+    properties_path += "/external-service.properties";
 
     Properties properties = new Properties();
     FileInputStream inputStream = null;
