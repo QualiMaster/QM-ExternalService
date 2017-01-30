@@ -370,6 +370,9 @@ public class DataConsumerDataHandler implements IDataHandler {
   }
 
   public void consumeResult(String hubList) {
+    if (!loggedIn) {
+      return;
+    }
     synchronized (printWriterLock) {
       printWriter.println(hubList + "!");
       printWriter.flush();
@@ -378,7 +381,7 @@ public class DataConsumerDataHandler implements IDataHandler {
 
   public void consumeCorrelationResult(String result) {
 
-    if (!filterResult(result)) {
+    if (!loggedIn || !filterResult(result)) {
       return;
     }
 
@@ -386,6 +389,10 @@ public class DataConsumerDataHandler implements IDataHandler {
       printWriter.println("resultsSubscribe_response," + result + "!");
       printWriter.flush();
     }
+  }
+
+  public boolean isLoggedIn() {
+    return loggedIn;
   }
 
   private String readString() throws IOException {
@@ -651,7 +658,7 @@ public class DataConsumerDataHandler implements IDataHandler {
 
     commandPipelineToComponentMap.put(REQUEST_SNAPSHOTS + ",tt", "queries,snapshotQuery");
 
-    commandPipelineToComponentMap.put(REQUEST_PATH + ",tt", "queries,snapshotQuery");
+    commandPipelineToComponentMap.put(REQUEST_PATH + ",tt", "queries,pathQuery");
 
     commandPipelineToComponentMap.put(REQUEST_FINANCIAL_REPLAY + ",te", "ReplaySink");
 
