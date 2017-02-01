@@ -8,6 +8,7 @@ import eu.qualimaster.adaptation.external.ReplayMessage;
 import eu.qualimaster.adaptation.external.ResponseMessage;
 import eu.qualimaster.adaptation.external.UsualMessage;
 import eu.qualimaster.comserver.adaptation.Dispatcher;
+import eu.qualimaster.comserver.adaptation.QueriesServer;
 import eu.qualimaster.dataManagement.accounts.PasswordStore;
 import eu.qualimaster.events.ResponseStore;
 
@@ -81,10 +82,12 @@ public class DataConsumerDataHandler implements IDataHandler {
   private Map<String, Set<String>> commandPipelineMap;
   private Map<String, String> identifierPipelineMap;
   private Map<String, String> commandPipelineToComponentMap;  // cmd,pipeline -> compName
+  private QueriesServer queriesServer;
 
   public DataConsumerDataHandler(final RequestHandler requestHandler, Socket socket,
-                                 boolean isReplay)
+                                 boolean isReplay, QueriesServer queriesServer)
       throws IOException {
+    this.queriesServer = queriesServer;
     printWriterLock = new Object();
     this.requestHandler = requestHandler;
     this.socket = socket;
@@ -288,18 +291,23 @@ public class DataConsumerDataHandler implements IDataHandler {
         // Pipelines: time travel
         logger.info("[consumer] got requestSnapshots. Cmd = " + received);
         String[] cmd_args = checkCommand(received);
-        if (cmd_args != null) {
-          changeParameter(cmd_args[0], cmd_args[1], cmd_args[2]);
-          changeParameter(cmd_args[0], cmd_args[1], "");
+
+        boolean success = queriesServer.sendQuery("s" + "," + cmd_args[2]);
+
+        synchronized (printWriterLock) {
+          printWriter.write(REQUEST_SNAPSHOTS + "_response," + (success ? "1,!" : "0,!"));
         }
       } else if (received.startsWith(REQUEST_PATH + ",")) {
         // Pipelines: time travel
         logger.info("[consumer] got requestPath. Cmd = " + received);
         String[] cmd_args = checkCommand(received);
-        if (cmd_args != null) {
-          changeParameter(cmd_args[0], cmd_args[1], cmd_args[2]);
-          changeParameter(cmd_args[0], cmd_args[1], "");
+
+        boolean success = queriesServer.sendQuery("p" + "," + cmd_args[2]);
+
+        synchronized (printWriterLock) {
+          printWriter.write(REQUEST_PATH + "_response," + (success ? "1,!" : "0,!"));
         }
+
       } else if (received.startsWith(REQUEST_FINANCIAL_REPLAY + ",")) {
         // Pipelines: transfer entropy
         logger.info("[consumer] got request financial replay");

@@ -2,6 +2,7 @@ package eu.qualimaster.comserver;
 
 import eu.qualimaster.adaptation.AdaptationConfiguration;
 
+import eu.qualimaster.comserver.adaptation.QueriesServer;
 import eu.qualimaster.dataManagement.DataManagementConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,6 +163,14 @@ public class Server {
     public void run() {
       Socket clientSocket;
       logger.info("Server started. Waiting for connections");
+
+      QueriesServer queriesServer = null;
+      if (!isProducer) {
+        queriesServer = new QueriesServer(9888);
+        Thread queriesThread = new Thread(queriesServer);
+        queriesThread.start();
+      }
+
       while (true) {
         try {
           if (isProducer) {
@@ -173,7 +182,7 @@ public class Server {
             clientSocket = serverConsumerSocket.accept();
             Thread
                 thread =
-                new Thread(new DataConsumerDataHandler(requestHandler, clientSocket, isReplay));
+                new Thread(new DataConsumerDataHandler(requestHandler, clientSocket, isReplay, queriesServer));
             thread.start();
           }
         } catch (SocketTimeoutException e) {

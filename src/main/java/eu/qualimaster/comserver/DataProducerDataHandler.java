@@ -47,8 +47,10 @@ public class DataProducerDataHandler implements IDataHandler {
         requestHandler.publishUnfilteredResult(received);
       } else if (received.startsWith("focusPip,")) {
         requestHandler.publishUnfilteredResult(received.substring(9));
-      } else if (received.startsWith("snapshots,")) {
-        requestHandler.publishUnfilteredResult(received.substring(10));
+      } else if (received.startsWith("snapshot,")) {
+        requestHandler.publishUnfilteredResult(received.substring(9));
+      } else if (received.startsWith("path,")) {
+        requestHandler.publishUnfilteredResult(received.substring(5));
       } else if (received.startsWith("te,")) {
         requestHandler.publishUnfilteredResult(received.substring(3));
       } else {  // Unknown
