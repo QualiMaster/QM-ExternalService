@@ -37,6 +37,8 @@ import static eu.qualimaster.comserver.Cmd.ADD_MARKET_PLAYER;
 import static eu.qualimaster.comserver.Cmd.CHANGE_CORRELATION_THRESHOLD;
 import static eu.qualimaster.comserver.Cmd.CHANGE_DENSITY_SIZE;
 import static eu.qualimaster.comserver.Cmd.CHANGE_HUBLIST_SIZE;
+import static eu.qualimaster.comserver.Cmd.CHANGE_PATH_QUERY;
+import static eu.qualimaster.comserver.Cmd.CHANGE_SNAPSHOT_QUERY;
 import static eu.qualimaster.comserver.Cmd.CHANGE_WINDOW_ADVANCE;
 import static eu.qualimaster.comserver.Cmd.CHANGE_WINDOW_SIZE;
 import static eu.qualimaster.comserver.Cmd.LOGIN;
@@ -45,8 +47,6 @@ import static eu.qualimaster.comserver.Cmd.QUOTE_LIST;
 import static eu.qualimaster.comserver.Cmd.REMOVE_MARKET_PLAYER;
 import static eu.qualimaster.comserver.Cmd.REQUEST_FINANCIAL_REPLAY;
 import static eu.qualimaster.comserver.Cmd.REQUEST_HISTORICAL_SENTIMENT;
-import static eu.qualimaster.comserver.Cmd.CHANGE_PATH_QUERY;
-import static eu.qualimaster.comserver.Cmd.CHANGE_SNAPSHOT_QUERY;
 import static eu.qualimaster.comserver.Cmd.RESULT_SUBSCRIBE;
 import static eu.qualimaster.comserver.Cmd.RESULT_UNSUBSCRIBE;
 
@@ -287,7 +287,8 @@ public class DataConsumerDataHandler implements IDataHandler {
         boolean success = queriesServer.sendQuery("s" + "," + cmd_args[2]);
 
         synchronized (printWriterLock) {
-          printWriter.write(REQUEST_SNAPSHOTS + "_response," + (success ? "1,!" : "0,!"));
+          printWriter.write(
+              CHANGE_SNAPSHOT_QUERY + "_response," + (success ? "1," : "0,") + cmd_args[2] + "!");
         }
       } else if (received.startsWith(CHANGE_PATH_QUERY + ",")) {
         // Pipelines: time travel
@@ -296,7 +297,8 @@ public class DataConsumerDataHandler implements IDataHandler {
         boolean success = queriesServer.sendQuery("p" + "," + cmd_args[2]);
 
         synchronized (printWriterLock) {
-          printWriter.write(REQUEST_PATH + "_response," + (success ? "1,!" : "0,!"));
+          printWriter.write(
+              CHANGE_PATH_QUERY + "_response," + (success ? "1," : "0,") + cmd_args[2] + "!");
         }
 
       } else if (received.startsWith(REQUEST_FINANCIAL_REPLAY + ",")) {
@@ -634,7 +636,8 @@ public class DataConsumerDataHandler implements IDataHandler {
     commandPipelineToComponentMap.put(REMOVE_MARKET_PLAYER + ",f", "SpringDataSource,playerList");
     commandPipelineToComponentMap.put(REMOVE_MARKET_PLAYER + ",te", "SpringDataSource,playerList");
 
-    commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",tt", "FinancialCorrelation,windowSize");
+    commandPipelineToComponentMap
+        .put(CHANGE_WINDOW_SIZE + ",tt", "FinancialCorrelation,windowSize");
     commandPipelineToComponentMap
         .put(CHANGE_WINDOW_SIZE + ",te", "TransferEntropyCalculation,windowSize");
     commandPipelineToComponentMap.put(CHANGE_WINDOW_SIZE + ",f", "correlation,windowSize");
