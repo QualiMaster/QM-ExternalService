@@ -45,8 +45,8 @@ import static eu.qualimaster.comserver.Cmd.QUOTE_LIST;
 import static eu.qualimaster.comserver.Cmd.REMOVE_MARKET_PLAYER;
 import static eu.qualimaster.comserver.Cmd.REQUEST_FINANCIAL_REPLAY;
 import static eu.qualimaster.comserver.Cmd.REQUEST_HISTORICAL_SENTIMENT;
-import static eu.qualimaster.comserver.Cmd.REQUEST_PATH;
-import static eu.qualimaster.comserver.Cmd.REQUEST_SNAPSHOTS;
+import static eu.qualimaster.comserver.Cmd.CHANGE_PATH_QUERY;
+import static eu.qualimaster.comserver.Cmd.CHANGE_SNAPSHOT_QUERY;
 import static eu.qualimaster.comserver.Cmd.RESULT_SUBSCRIBE;
 import static eu.qualimaster.comserver.Cmd.RESULT_UNSUBSCRIBE;
 
@@ -171,6 +171,7 @@ public class DataConsumerDataHandler implements IDataHandler {
         break;  // socket has been closed
       }
       // -- Server Commands
+      logger.info("Got command: " + received);
       if (received.startsWith(LOGIN + ",")) { // Login command
         synchronized (printWriterLock) {
           try {
@@ -180,7 +181,6 @@ public class DataConsumerDataHandler implements IDataHandler {
             } else {
               reply = login(received.substring(6, received.length())) + "!";
             }
-            logger.info("Sending login response");
             printWriter.println("login_response," + reply);
             printWriter.flush();
           } catch (Exception e) {
@@ -205,7 +205,7 @@ public class DataConsumerDataHandler implements IDataHandler {
         synchronized (printWriterLock) {
           try {
             String reply = requestHandler.getQuoteList() + "!";
-            logger.info("Sending symbols");
+            logger.info("Sending symbols...");
             printWriter.print("quoteList_response," + reply);
             printWriter.flush();
           } catch (Exception e) {
@@ -215,7 +215,6 @@ public class DataConsumerDataHandler implements IDataHandler {
           }
         }
       } else if (received.startsWith(REQUEST_HISTORICAL_SENTIMENT + ",")) {
-        logger.info("[consumer] got resultsHistoricalSentiment. Cmd = " + received);
         try {
 
           synchronized (printWriterLock) {
@@ -240,7 +239,6 @@ public class DataConsumerDataHandler implements IDataHandler {
         // --
       } else if (received.startsWith(RESULT_SUBSCRIBE + ",")) {  // Start sending results command
         // Pipelines: priority
-        logger.info("[consumer] got resultsSubscribe");
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           addToFilter(cmd_args[2]);
@@ -250,7 +248,6 @@ public class DataConsumerDataHandler implements IDataHandler {
         }
       } else if (received.startsWith(RESULT_UNSUBSCRIBE + ",")) {  // Stop sending results command
         // Pipelines: priority
-        logger.info("[consumer] got resultsUnsubscribe");
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           removeFromFilter(cmd_args[2]);
@@ -261,35 +258,30 @@ public class DataConsumerDataHandler implements IDataHandler {
       } else if (received.startsWith(ADD_MARKET_PLAYER + ",")
                  || received.startsWith(REMOVE_MARKET_PLAYER + ",")) {
         // Pipelines: focus, transfer entropy
-        logger.info("Got " + received);
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           changeParameter(cmd_args[0], cmd_args[1], cmd_args[0] + "/" + cmd_args[2]);
         }
       } else if (received.startsWith(CHANGE_WINDOW_SIZE + ",")) {
         // Pipelines: all
-        logger.info("[consumer] got changewindowSize. Cmd = " + received);
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           changeParameter(cmd_args[0], cmd_args[1], Integer.parseInt(cmd_args[2]));
         }
       } else if (received.startsWith(CHANGE_HUBLIST_SIZE + ",")) {
         // Pipelines: dynamic graph
-        logger.info("[consumer] got changehubListSize. Cmd = " + received);
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           changeParameter(cmd_args[0], cmd_args[1], Integer.parseInt(cmd_args[2]));
         }
       } else if (received.startsWith(CHANGE_CORRELATION_THRESHOLD + ",")) {
         // Pipelines: focus & dynamic graph & time travel
-        logger.info("[consumer] got changeDynamicCorrelationThreshold. Cmd = " + received);
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           changeParameter(cmd_args[0], cmd_args[1], Double.parseDouble(cmd_args[2]));
         }
-      } else if (received.startsWith(REQUEST_SNAPSHOTS + ",")) {
+      } else if (received.startsWith(CHANGE_SNAPSHOT_QUERY + ",")) {
         // Pipelines: time travel
-        logger.info("[consumer] got requestSnapshots. Cmd = " + received);
         String[] cmd_args = checkCommand(received);
 
         boolean success = queriesServer.sendQuery("s" + "," + cmd_args[2]);
@@ -297,9 +289,8 @@ public class DataConsumerDataHandler implements IDataHandler {
         synchronized (printWriterLock) {
           printWriter.write(REQUEST_SNAPSHOTS + "_response," + (success ? "1,!" : "0,!"));
         }
-      } else if (received.startsWith(REQUEST_PATH + ",")) {
+      } else if (received.startsWith(CHANGE_PATH_QUERY + ",")) {
         // Pipelines: time travel
-        logger.info("[consumer] got requestPath. Cmd = " + received);
         String[] cmd_args = checkCommand(received);
 
         boolean success = queriesServer.sendQuery("p" + "," + cmd_args[2]);
@@ -310,21 +301,18 @@ public class DataConsumerDataHandler implements IDataHandler {
 
       } else if (received.startsWith(REQUEST_FINANCIAL_REPLAY + ",")) {
         // Pipelines: transfer entropy
-        logger.info("[consumer] got request financial replay");
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           requestFinancialReplay(cmd_args[0], cmd_args[1], cmd_args[2]);
         }
       } else if (received.startsWith(CHANGE_WINDOW_ADVANCE + ",")) {
         // Pipelines: transfer entropy
-        logger.info("[consumer] got changeWindowAdvance. Cmd = " + received);
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           changeParameter(cmd_args[0], cmd_args[1], Integer.parseInt(cmd_args[2]));
         }
       } else if (received.startsWith(CHANGE_DENSITY_SIZE + ",")) {
         // Pipelines: transfer entropy
-        logger.info("[consumer] got changeDensitySize. Cmd = " + received);
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           changeParameter(cmd_args[0], cmd_args[1], Integer.parseInt(cmd_args[2]));
@@ -617,11 +605,11 @@ public class DataConsumerDataHandler implements IDataHandler {
     commandPipelineMap.get(CHANGE_CORRELATION_THRESHOLD).add("d");
     commandPipelineMap.get(CHANGE_CORRELATION_THRESHOLD).add("tt");
 
-    commandPipelineMap.put(REQUEST_SNAPSHOTS, new HashSet<String>());
-    commandPipelineMap.get(REQUEST_SNAPSHOTS).add("tt");
+    commandPipelineMap.put(CHANGE_SNAPSHOT_QUERY, new HashSet<String>());
+    commandPipelineMap.get(CHANGE_SNAPSHOT_QUERY).add("tt");
 
-    commandPipelineMap.put(REQUEST_PATH, new HashSet<String>());
-    commandPipelineMap.get(REQUEST_PATH).add("tt");
+    commandPipelineMap.put(CHANGE_PATH_QUERY, new HashSet<String>());
+    commandPipelineMap.get(CHANGE_PATH_QUERY).add("tt");
 
     commandPipelineMap.put(REQUEST_FINANCIAL_REPLAY, new HashSet<String>());
     commandPipelineMap.get(REQUEST_FINANCIAL_REPLAY).add("te");
@@ -664,9 +652,9 @@ public class DataConsumerDataHandler implements IDataHandler {
     commandPipelineToComponentMap
         .put(CHANGE_CORRELATION_THRESHOLD + ",tt", "DynamicGraphCompilation,correlationThreshold");
 
-    commandPipelineToComponentMap.put(REQUEST_SNAPSHOTS + ",tt", "queries,snapshotQuery");
+    commandPipelineToComponentMap.put(CHANGE_SNAPSHOT_QUERY + ",tt", "queries,snapshotQuery");
 
-    commandPipelineToComponentMap.put(REQUEST_PATH + ",tt", "queries,pathQuery");
+    commandPipelineToComponentMap.put(CHANGE_PATH_QUERY + ",tt", "queries,pathQuery");
 
     commandPipelineToComponentMap.put(REQUEST_FINANCIAL_REPLAY + ",te", "ReplaySink");
 

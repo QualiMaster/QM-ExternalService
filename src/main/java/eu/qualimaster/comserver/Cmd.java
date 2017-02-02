@@ -15,8 +15,8 @@ public class Cmd {
   public static final String CHANGE_WINDOW_SIZE = "changewindowSize";
   public static final String CHANGE_HUBLIST_SIZE = "changehubListSize";
   public static final String CHANGE_CORRELATION_THRESHOLD = "changeCorrelationThreshold";
-  public static final String REQUEST_SNAPSHOTS = "requestSnapshots";
-  public static final String REQUEST_PATH = "requestPath";
+  public static final String CHANGE_SNAPSHOT_QUERY = "changesnapshotQuery";
+  public static final String CHANGE_PATH_QUERY = "changepathQuery";
   public static final String REQUEST_FINANCIAL_REPLAY = "requestFinancialReplay";
   public static final String CHANGE_WINDOW_ADVANCE = "changeWindowAdvance";
   public static final String CHANGE_DENSITY_SIZE = "changeDensitySize";
