@@ -282,6 +282,7 @@ public class DataConsumerDataHandler implements IDataHandler {
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           changeParameter(cmd_args[0], cmd_args[1], cmd_args[2]);
+          sleepAtLeastFor(500);
           changeParameter(cmd_args[0], cmd_args[1], "");
         }
       } else if (received.startsWith(CHANGE_PATH_QUERY + ",")) {
@@ -289,6 +290,7 @@ public class DataConsumerDataHandler implements IDataHandler {
         String[] cmd_args = checkCommand(received);
         if (cmd_args != null) {
           changeParameter(cmd_args[0], cmd_args[1], cmd_args[2]);
+          sleepAtLeastFor(500);
           changeParameter(cmd_args[0], cmd_args[1], "");
         }
       } else if (received.startsWith(REQUEST_FINANCIAL_REPLAY + ",")) {
@@ -324,6 +326,17 @@ public class DataConsumerDataHandler implements IDataHandler {
       socket.close();
     } catch (IOException e) {
       logger.error(e.getMessage(), e);
+    }
+  }
+
+  private void sleepAtLeastFor(long i) {
+    long now = System.currentTimeMillis();
+    while (System.currentTimeMillis() - now < i) {
+      try {
+        Thread.sleep(i);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
   }
 
@@ -617,7 +630,7 @@ public class DataConsumerDataHandler implements IDataHandler {
     identifierPipelineMap.put("d", "DynamicGraphPip");
     identifierPipelineMap.put("f", "FocusPip");
     identifierPipelineMap.put("te", "TransferPip");
-    identifierPipelineMap.put("tt", "TimeTravelPip");
+    identifierPipelineMap.put("tt", "TimeTravelSimPip");
 
     commandPipelineToComponentMap = new HashMap<>();
     commandPipelineToComponentMap.put(ADD_MARKET_PLAYER + ",f", "SpringDataSource,playerList");
